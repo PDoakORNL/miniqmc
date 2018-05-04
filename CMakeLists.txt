@@ -5,6 +5,12 @@ PROJECT(qmcpack)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.10)
 IF(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
+  IF(CMAKE_VERSION VERSION_GREATER 3.1.3 AND NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+    cmake_policy(SET CMP0056 NEW)
+    # This policy insures that the CMAKE_EXE_LINKER_FLAGS of the calling project
+    # are used in try_compile test cmake projects.
+    # CHECK_CXX_SOURCE_COMPILES and others depend on try_compile
+  endif(CMAKE_VERSION VERSION_GREATER 3.1.3 AND NOT $ENV{CRAYPE_VERSION} MATCHES ".")
 ENDIF(COMMAND cmake_policy)
 
 
@@ -379,9 +385,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   # check lapack/blas
   #-------------------------------------------------------------------
   # Quick search for MKL (this will need to be improved). Currently only for Intel compilers
-  IF (INTEL_COMPILER)
+  SET(ENABLE_OUTSIDE_MKL FALSE CACHE BOOL "ENABLE MKL for non-intel compilers (Experimental)")
+  IF (INTEL_COMPILER OR ENABLE_OUTSIDE_MKL)
    INCLUDE(CMake/FindMKL.cmake)
-  ENDIF(INTEL_COMPILER)
+  ENDIF(INTEL_COMPILER OR ENABLE_OUTSIDE_MKL)
   IF ( HAVE_MKL )
     # We found MKL, add the link library
     SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${MKL_FLAGS}")
@@ -423,7 +430,9 @@ IF (ENABLE_GCOV)
   ENDIF()
 ENDIF(ENABLE_GCOV)
 
-# Require C++11 while leaving possibility to fall back by modifying this file
+# Check for the compiler C++11 flag, if we go to requiring >= cmake 3.1.3 we could drop this
+# and just write
+# set(CMAKE_CXX_STANDARD_REQUIRED 11 CACHE INTEGER "C++ stangard must be at least 11")
 SET(CXX11_NEEDED TRUE)
 IF(CXX11_NEEDED)
   SET(CXX11_FLAG "-std=c++11")
@@ -484,9 +493,6 @@ IF ( HAVE_MPI )
 
   MESSAGE(STATUS "MPI runner is ${MPIEXEC}")
 ENDIF(HAVE_MPI)
-
-MESSAGE(STATUS "CXX compiler flags: ${CMAKE_CXX_FLAGS}")
-MESSAGE(STATUS "CC  compiler flags: ${CMAKE_C_FLAGS}")
 
 SET(HAVE_OOMPI ${HAVE_MPI})
 INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
@@ -730,6 +736,26 @@ ENDIF()
 IF(ENABLE_GCOV)
 MESSAGE(STATUS "GCOV is enabled")
 ENDIF()
+
+############################################################
+# FLAGS at the project level
+############################################################
+#this might be redundant but maybe not in all CMake versions.
+string(TOUPPER ${CMAKE_BUILD_TYPE} THIS_CONFIG)
+
+foreach(lang IN ITEMS C CXX)
+  set(PROJECT_CMAKE_${lang}_FLAGS ${CMAKE_${lang}_FLAGS})
+  #pre 3.0 cmake does not have string CONCAT
+  set(TMP_PROJECT_CMAKE_${lang}_FLAGS "${PROJECT_CMAKE_${lang}_FLAGS} ${CMAKE_${lang}_FLAGS_${THIS_CONFIG}}")
+  MESSAGE("Project ${lang}_FLAGS: ${TMP_PROJECT_CMAKE_${lang}_FLAGS}")
+endforeach(lang IN ITEMS C CXX)
+
+foreach(target_type IN ITEMS EXE SHARED)
+  set(PROJECT_CMAKE_${target_type}_LINKER_FLAGS ${CMAKE_${target_type}_LINKER_FLAGS})
+  set(TMP_PROJECT_CMAKE_${target_type}_LINKER_FLAGS "${PROJECT_CMAKE_${target_type}_LINKER_FLAGS} ${CMAKE_${target_type}_LINKER_FLAGS_${THIS_CONFIG}}")
+  MESSAGE("Project ${target_type}_LINKER_FLAGS: ${TMP_PROJECT_CMAKE_${target_type}_LINKER_FLAGS}")
+endforeach(target_type IN ITEMS EXE SHARED)
+
 
 ###################################################
 # Done searching libraries. Start building qmcpack
