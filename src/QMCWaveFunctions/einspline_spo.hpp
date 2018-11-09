@@ -371,6 +371,7 @@ struct einspline_spo : public SPOSet
                                 hess(block).data(),
                                 psi(block).extent(0));
   }
+
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh_pfor(const PosType& p)
   {
