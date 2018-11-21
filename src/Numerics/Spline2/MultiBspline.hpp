@@ -23,6 +23,7 @@
 #define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
 
 #include <iostream>
+#include "Devices.h"
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
@@ -33,11 +34,11 @@
 
 namespace qmcplusplus
 {
-template<typename T>
+template<Devices D, typename T>
 struct MultiBspline
 {
   /// define the einspline object type
-  using spliner_type = typename bspline_traits<T, 3>::SplineType;
+  using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
   MultiBspline() {}
   MultiBspline(const MultiBspline& in) = default;
@@ -133,9 +134,9 @@ struct MultiBspline
                                            size_t num_splines) const;
 };
 
-template<typename T>
+template<Devices D, typename T>
 template<class TeamType>
-KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const TeamType& team,
+KOKKOS_INLINE_FUNCTION void MultiBspline<D, T>::evaluate_v(const TeamType& team,
                                                         const spliner_type* restrict spline_m,
                                                         T x,
                                                         T y,
@@ -187,8 +188,8 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const TeamType& team,
     }
 }
 
-template<typename T>
-KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_vgl(const spliner_type* restrict spline_m,
+template<Devices D, typename T>
+KOKKOS_INLINE_FUNCTION void MultiBspline<D, T>::evaluate_vgl(const spliner_type* restrict spline_m,
                                                           T x,
                                                           T y,
                                                           T z,
@@ -312,9 +313,9 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_vgl(const spliner_type* re
   }
 }
 
-template<typename T>
+template<Devices D, typename T>
 template<class TeamType>
-KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_vgh(const TeamType& team,
+KOKKOS_INLINE_FUNCTION void MultiBspline<D, T>::evaluate_vgh(const TeamType& team,
                                                           const spliner_type* restrict spline_m,
                                                           T x,
                                                           T y,

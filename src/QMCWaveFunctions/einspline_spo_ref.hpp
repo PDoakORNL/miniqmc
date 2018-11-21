@@ -34,10 +34,10 @@ namespace miniqmcreference
 using namespace qmcplusplus;
 
 template<typename T>
-struct einspline_spo_ref : public SPOSet
+struct einspline_spo_ref : public SPOSet<Devices::CPU>
 {
   /// define the einsplie data object type
-  using spline_type     = typename bspline_traits<T, 3>::SplineType;
+  using spline_type     = typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T * [3], Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
@@ -57,7 +57,7 @@ struct einspline_spo_ref : public SPOSet
   bool Owner;
   lattice_type Lattice;
   /// use allocator
-  einspline::Allocator myAllocator;
+  einspline::Allocator<Devices::KOKKOS> myAllocator;
   /// compute engine
   MultiBsplineRef<T> compute_engine;
 
@@ -168,8 +168,7 @@ struct einspline_spo_ref : public SPOSet
 
       for (int i = 0; i < nBlocks; ++i)
       {
-        einsplines(i) =
-            *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+	*myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)

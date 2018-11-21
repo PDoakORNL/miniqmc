@@ -33,7 +33,7 @@ template<typename T>
 struct MultiBsplineRef
 {
   /// define the einsplie object type
-  using spliner_type = typename bspline_traits<T, 3>::SplineType;
+  using spliner_type = typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType;
 
   MultiBsplineRef() {}
   MultiBsplineRef(const MultiBsplineRef& in) = default;

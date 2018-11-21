@@ -22,6 +22,7 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
+#include "Devices.h"
 #include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Utilities/SIMD/allocator.hpp>
@@ -31,8 +32,8 @@
 
 namespace qmcplusplus
 {
-template<typename T>
-struct einspline_spo : public SPOSet
+template <Devices D, typename T>
+struct einspline_spo : public SPOSet<D>
 {
   struct EvaluateVGHTag
   {};
@@ -53,9 +54,12 @@ struct einspline_spo : public SPOSet
   int nSplinesSerialThreshold_V;
   int nSplinesSerialThreshold_VGH;
 
+  // Global Type Aliases
+  using QMCT = QMCTraits;
+  using PosType = QMCT::PosType;
 
   /// define the einsplie data object type
-  using spline_type     = typename bspline_traits<T, 3>::SplineType;
+  using spline_type     = typename bspline_traits<D, T, 3>::SplineType;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T * [3], Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
@@ -78,9 +82,9 @@ struct einspline_spo : public SPOSet
 
   lattice_type Lattice;
   /// use allocator
-  einspline::Allocator myAllocator;
+  einspline::Allocator<D> myAllocator;
   /// compute engine
-  MultiBspline<T> compute_engine;
+  MultiBspline<D, T> compute_engine;
 
   Kokkos::View<spline_type*> einsplines;
   Kokkos::View<vContainer_type*> psi;
@@ -212,8 +216,7 @@ struct einspline_spo : public SPOSet
 
       for (int i = 0; i < nBlocks; ++i)
       {
-        einsplines(i) =
-            *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        *myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)

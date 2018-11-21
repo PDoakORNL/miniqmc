@@ -22,8 +22,14 @@ namespace qmcplusplus
  * SPOSet stands for S(ingle)P(article)O(rbital)Set which contains
  * a number of single-particle orbitals with capabilities of evaluating \f$ \phi_j({\bf r}_i)\f$
  */
-class SPOSet : public QMCTraits
+template<Devices D>
+class SPOSet
 {
+public:
+  //Type aliases
+  using QMCT = QMCTraits;
+  using PosType = ParticleSet::PosType;
+  
 private:
   /// number of SPOs
   int OrbitalSetSize;
@@ -45,7 +51,7 @@ public:
 
   /// operates on multiple walkers
   virtual void
-      multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  multi_evaluate_v(const std::vector<SPOSet<D>*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
@@ -53,7 +59,7 @@ public:
   }
 
   virtual void
-      multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  multi_evaluate_vgl(const std::vector<SPOSet<D>*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
@@ -61,7 +67,7 @@ public:
   }
 
   virtual void
-      multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  multi_evaluate_vgh(const std::vector<SPOSet<D>*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
