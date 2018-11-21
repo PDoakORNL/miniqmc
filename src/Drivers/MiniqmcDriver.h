@@ -44,29 +44,49 @@ public:
   {
     template <typename ...> struct IntList {};
 
-  void handle_cases(MiniqmcDriver& my_, int, IntList<>) { /* "default case" */ }
+  void run_cases(MiniqmcDriver& my_, int, IntList<>) { /* "default case" */ }
 
-  template<typename ...N> void handle_cases(MiniqmcDriver& my_, int i)
+  template<typename ...N> void run_cases(MiniqmcDriver& my_, int i)
   {
-    handle_cases(my_, i, IntList<N...>());
+    run_cases(my_, i, IntList<N...>());
   }
 
     template<typename I, typename ...N>
-  void handle_cases(MiniqmcDriver& my_, int i, IntList<I, N...>)
+  void run_cases(MiniqmcDriver& my_, int i, IntList<I, N...>)
   {
-    if (I::value != i) { return handle_cases(my_, i, IntList<N...>()); }
+    if (I::value != i) { return run_cases(my_, i, IntList<N...>()); }
     decltype(+device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_,
 							       my_.myPrimes,
 							       my_.ions,
 							       my_.spo_main);
   }
 
+  void initialize_cases(int argc, char** argv, int , IntList<>) { /* "default case" */ }
+
+  template<typename ...N>
+  void initialize_cases(int argc, char** argv, int i)
+  {
+    initialize_cases(argc, argv, i, IntList<N...>());
+  }
+
+  template<typename I, typename ...N>
+  void initialize_cases(int argc, char** argv, int i, IntList<I, N...>)
+  {
+    if (I::value != i) { return initialize_cases(argc, argv, i, IntList<N...>()); }
+    decltype(+device_tuple[hana::size_c<I::value>])::type::initialize(argc, argv);
+  }
+
     
     MiniqmcDriver& my_;
     CaseHandler(MiniqmcDriver& my): my_(my) {}
-    void handle(int i)
+    void run(int i)
     {
-      handle_cases<DN...>(my_, i);
+      run_cases<DN...>(my_, i);
+    }
+
+    void initialize(int argc, char** argv, int i)
+    {
+      initialize_cases<DN...>(argc, argv, i);
     }
   };
 

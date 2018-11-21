@@ -13,17 +13,12 @@ namespace qmcplusplus
 
 void MiniqmcDriver::initialize(int argc, char** argv)
 {
-  // using init_func       = std::function<void(int argc, char** argv)>;
-  // auto initializeCPU    = std::bind(&MiniqmcDriverFunctions<Devices::CPU>::initialize,
-  // 				    std::placeholders::_1,
-  // 				    std::placeholders::_2);
-  // auto initializeKOKKOS = std::bind(&MiniqmcDriverFunctions<Devices::KOKKOS>::initialize,
-  //                                   std::placeholders::_1,
-  //                                   std::placeholders::_2);
+  using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;
+  
+  MyHandler handler(*this);
 
-  //using DEVICE_TYPE = decltype(mdf_map[device]);
-  //auto& MDFI = mdf_map[device];
-  MiniqmcDriverFunctions<Devices::KOKKOS>::initialize(argc, argv);
+  handler.initialize(argc, argv, mq_opt_.device_number);
+  
   comm = new Communicate(argc, argv);
 
   if (!comm->root())
@@ -116,25 +111,22 @@ void MiniqmcDriver::run()
 {
     //    decltype(std::declval<device_map[mq_opt_.device_number]>)::runThreads(mq_opt_, myPrimes, ions, spo_main);
 
-  MiniqmcDriverFunctions<Devices::CPU> myCPU;
-  constexpr auto device_map =
-  hana::make_map(
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
-#ifdef QMC_USE_KOKKOS
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
-#endif
-#ifdef QMC_USE_OMPOL
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
-#endif
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>)
-				   );
+//   constexpr auto device_map =
+//   hana::make_map(
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
+// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
+// #ifdef QMC_USE_KOKKOS
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
+// 				hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
+// #endif
+// #ifdef QMC_USE_OMPOL
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
+// 				hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
+// #endif
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
+// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>)
+// 				   );
 
-  //hana::print(hana::size_c<static_cast<size_t>(Devices::LAST)>);
-  //BOOST_HANA_CHECK(hana::length(device_tuple) == hana::size_c<hana::int_c<static_cast<size_t>(Devices::LAST)>>);
   BOOST_HANA_CHECK(hana::size_c<hana::int_c<3>> == hana::length(device_tuple));
   BOOST_HANA_CHECK(hana::size_c<hana::int_c<2>> == hana::size_c<static_cast<size_t>(Devices::LAST)>);
   //BOOST_HANA_CHECK((hana::size_c<static_cast<size_t>(Devices::LAST)> == hana::length(device_tuple));
@@ -145,7 +137,7 @@ void MiniqmcDriver::run()
   
   MyHandler handler(*this);
 
-  handler.handle(mq_opt_.device_number);
+  handler.run(mq_opt_.device_number);
   
   // switch (mq_opt_.device_number)
   // {
