@@ -54,7 +54,7 @@ void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
   // create and initialize movers
   Mover thiswalker(myPrimes[teamID], ions);
   // create a spo view in each Mover
-  thiswalker.spo = build_SPOSet_view(mq_opt.useRef, spo_main, team_size, teamID);
+  thiswalker.spo = SPOSetBuilder<DT>::buildView(mq_opt.useRef, spo_main, team_size, teamID);
 
   // create wavefunction per mover
   // This updates ions
@@ -165,6 +165,17 @@ void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
     mq_opt.Timers[mq_opt.Timer_ECP]->stop();
 
   } // nsteps
+}
+
+template<Devices DT>
+void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet* spo_set,
+					     MiniqmcOptions& mq_opt,
+					     const int norb,
+					     const int nTiles,
+					     const Tensor<OHMMS_PRECISION, 3>& lattice_b)
+{
+  spo_set = SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny,
+				     mq_opt.nz, norb, nTiles, lattice_b);
 }
 
 template<Devices DT>

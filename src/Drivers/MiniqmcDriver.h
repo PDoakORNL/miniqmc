@@ -26,83 +26,140 @@ namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
-  constexpr auto device_tuple =
-  hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
+constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
-		   hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
+                                               hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
 #endif
 #ifdef QMC_USE_OMPOL
-		   hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>,
+                                               hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>,
 #endif
-		   hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
+                                               hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
 
 class MiniqmcDriver
 {
 public:
-  template<typename ...DN>
+  template<typename... DN>
   struct CaseHandler
   {
-    template <typename ...> struct IntList {};
+    template<typename...>
+    struct IntList
+    {};
 
-  void run_cases(MiniqmcDriver& my_, int, IntList<>) { /* "default case" */ }
+    void build_cases(SPOSet* spo_set,
+		     MiniqmcOptions& mq_opt,
+		     const int norb,
+		     const int nTiles,
+		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+		     int i,
+		     IntList<>) { /* "default case" */ }
 
-  template<typename ...N> void run_cases(MiniqmcDriver& my_, int i)
-  {
-    run_cases(my_, i, IntList<N...>());
-  }
+    template<typename ...N>
+    void build_cases(SPOSet* spo_set,
+		     MiniqmcOptions& mq_opt,
+		     const int norb,
+		     const int nTiles,
+		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+		     int i)
+    {
+      build_cases(spo_set, mq_opt, norb, nTiles, lattice_b, i, IntList<N...>());
+    }
 
     template<typename I, typename ...N>
-  void run_cases(MiniqmcDriver& my_, int i, IntList<I, N...>)
-  {
-    if (I::value != i) { return run_cases(my_, i, IntList<N...>()); }
-    decltype(+device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_,
-							       my_.myPrimes,
-							       my_.ions,
-							       my_.spo_main);
-  }
+    void build_cases(SPOSet* spo_set,
+		     MiniqmcOptions& mq_opt,
+		     const int norb,
+		     const int nTiles,
+		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+		     int i,
+		     IntList<I, N...>)
+    {
+      if (I::value != i)
+      {
+	return build_cases(spo_set,
+			   mq_opt,
+			   norb,
+			   nTiles,
+			   lattice_b,
+			   i,
+			   IntList<N...>());
+      }
+      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set,
+									 mq_opt,
+									 norb,
+									 nTiles,
+									 lattice_b);
+    }
 
-  void initialize_cases(int argc, char** argv, int , IntList<>) { /* "default case" */ }
+    void run_cases(MiniqmcDriver& my_, int, IntList<>)
+    { /* "default case" */
+    }
 
-  template<typename ...N>
-  void initialize_cases(int argc, char** argv, int i)
-  {
-    initialize_cases(argc, argv, i, IntList<N...>());
-  }
+    template<typename... N>
+    void run_cases(MiniqmcDriver& my_, int i)
+    {
+      run_cases(my_, i, IntList<N...>());
+    }
 
-  template<typename I, typename ...N>
-  void initialize_cases(int argc, char** argv, int i, IntList<I, N...>)
-  {
-    if (I::value != i) { return initialize_cases(argc, argv, i, IntList<N...>()); }
-    decltype(+device_tuple[hana::size_c<I::value>])::type::initialize(argc, argv);
-  }
+    template<typename I, typename... N>
+    void run_cases(MiniqmcDriver& my_, int i, IntList<I, N...>)
+    {
+      if (I::value != i)
+      {
+        return run_cases(my_, i, IntList<N...>());
+      }
+      decltype(+device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_,
+                                                                        my_.myPrimes,
+                                                                        my_.ions,
+                                                                        my_.spo_main);
+    }
 
-    
+    void initialize_cases(int argc, char** argv, int, IntList<>)
+    { /* "default case" */
+    }
+
+    template<typename... N>
+    void initialize_cases(int argc, char** argv, int i)
+    {
+      initialize_cases(argc, argv, i, IntList<N...>());
+    }
+
+    template<typename I, typename... N>
+    void initialize_cases(int argc, char** argv, int i, IntList<I, N...>)
+    {
+      if (I::value != i)
+      {
+        return initialize_cases(argc, argv, i, IntList<N...>());
+      }
+      decltype(+device_tuple[hana::size_c<I::value>])::type::initialize(argc, argv);
+    }
+
+
     MiniqmcDriver& my_;
-    CaseHandler(MiniqmcDriver& my): my_(my) {}
-    void run(int i)
+    CaseHandler(MiniqmcDriver& my) : my_(my) {}
+    void build(SPOSet* spo_set,
+	       MiniqmcOptions& mq_opt,
+	       const int norb,
+	       const int nTiles,
+	       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+	       int i)
     {
-      run_cases<DN...>(my_, i);
+      build_cases<DN...>(spo_set, mq_opt, norb, nTiles, lattice_b, i);
     }
 
-    void initialize(int argc, char** argv, int i)
-    {
-      initialize_cases<DN...>(argc, argv, i);
-    }
+    void run(int i) { run_cases<DN...>(my_, i); }
+    void initialize(int argc, char** argv, int i) { initialize_cases<DN...>(argc, argv, i); }
   };
 
 
-
-
-
-   //static constexpr auto mdfs = hana::make_map(hana::for_each(Devices, [&](auto x){
-		    //								 return hana::pair(hana::type_c(x), hana::type_c(MiniqmcDriverFunctions<x>))});
+  //static constexpr auto mdfs = hana::make_map(hana::for_each(Devices, [&](auto x){
+  //								 return hana::pair(hana::type_c(x), hana::type_c(MiniqmcDriverFunctions<x>))});
 
   MiniqmcDriver(MiniqmcOptions mq_opt) : mq_opt_(mq_opt) {}
 
   void initialize(int argc, char** argv);
-  
+
   void run();
-  
+
   ~MiniqmcDriver()
   {
     if (spo_main != nullptr)
@@ -152,12 +209,8 @@ private:
     }
   }
 
-  
-  void main_function()
-  {
-    
 
-  }
+  void main_function() {}
 
   using QMCT = QMCTraits;
   // clang-format off
@@ -189,7 +242,7 @@ private:
 
   PrimeNumberSet<uint32_t> myPrimes;
   ParticleSet ions;
-  SPOSet* spo_main = nullptr;
+  SPOSet* spo_main  = nullptr;
   Communicate* comm = nullptr;
 };
 

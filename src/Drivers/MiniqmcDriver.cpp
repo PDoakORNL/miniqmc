@@ -86,8 +86,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << '\n';
 
-    spo_main =
-        build_SPOSet(mq_opt_.useRef, mq_opt_.nx, mq_opt_.ny, mq_opt_.nz, norb, nTiles, lattice_b);
+    handler.build(spo_main, mq_opt_, norb, nTiles, lattice_b, mq_opt_.device_number);
   }
 
   if (!mq_opt_.useRef)

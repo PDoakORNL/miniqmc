@@ -251,6 +251,10 @@ void Allocator<D>::copy(UBT* single, MBT* multi, int i, const int* offset, const
       }
     }
 }
+
+extern template class Allocator<Devices::CPU>;
+extern template class Allocator<Devices::KOKKOS>;
+
 } // namespace einspline
 } // namespace qmcplusplus
 #endif

@@ -26,7 +26,7 @@
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include "QMCWaveFunctions/SPOSet.h"
+#include "QMCWaveFunctions/SPOSetImp.h"
 #include <iostream>
 
 namespace miniqmcreference
@@ -34,8 +34,9 @@ namespace miniqmcreference
 using namespace qmcplusplus;
 
 template<typename T>
-struct einspline_spo_ref : public SPOSet<Devices::CPU>
+struct einspline_spo_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
 {
+  using QMCT = QMCTraits;
   /// define the einsplie data object type
   using spline_type     = typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType;
   using vContainer_type = Kokkos::View<T*>;
@@ -156,8 +157,8 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
-      PosType start(0);
-      PosType end(1);
+      QMCT::PosType start(0);
+      QMCT::PosType end(1);
 
       //    einsplines.resize(nBlocks);
       einsplines = Kokkos::View<spline_type*>("einsplines", nBlocks);
@@ -168,7 +169,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
 
       for (int i = 0; i < nBlocks; ++i)
       {
-	*myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+	myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)
@@ -184,7 +185,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p)
+  inline void evaluate_v(const QMCT::PosType& p)
   {
     ScopedTimer local_timer(timer);
 
@@ -194,7 +195,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi */
-  inline void evaluate_v_pfor(const PosType& p)
+  inline void evaluate_v_pfor(const QMCT::PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
 #pragma omp for nowait
@@ -203,7 +204,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType& p)
+  inline void evaluate_vgl(const QMCT::PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -218,7 +219,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const PosType& p)
+  inline void evaluate_vgl_pfor(const QMCT::PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
 #pragma omp for nowait
@@ -234,7 +235,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p)
+  inline void evaluate_vgh(const QMCT::PosType& p)
   {
     ScopedTimer local_timer(timer);
 
@@ -251,7 +252,7 @@ struct einspline_spo_ref : public SPOSet<Devices::CPU>
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const PosType& p)
+  inline void evaluate_vgh_pfor(const QMCT::PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
 #pragma omp for nowait

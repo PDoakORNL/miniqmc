@@ -2,7 +2,6 @@
 
 namespace qmcplusplus
 {
-
 template<class T, typename TBOOL>
 const std::vector<T*>
     filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
@@ -38,4 +37,4 @@ const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& move
   return wf_list;
 }
 
-}
+} // namespace qmcplusplus

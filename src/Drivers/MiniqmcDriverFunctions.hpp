@@ -43,6 +43,11 @@ class MiniqmcDriverFunctions
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
+  static void buildSPOSet(SPOSet* spo_set,
+			  MiniqmcOptions& mq_opt,
+			  const int norb,
+			  const int nTiles,
+			  const Tensor<OHMMS_PRECISION, 3>& lattice_b);
   static void runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
@@ -86,15 +91,14 @@ static constexpr auto device_map =
 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
 #ifdef QMC_USE_KOKKOS
 		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
+                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
 #endif
 #ifdef QMC_USE_OMPOL
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
+                hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
+                                hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
 #endif
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>)
-				   );
+                hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
+                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>));
 
 
 } // namespace qmcplusplus

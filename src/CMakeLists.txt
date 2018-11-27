@@ -144,6 +144,10 @@ ENDIF()
     ${GITREV_TMP}
     )
 
+  IF(QMC_USE_KOKKOS)
+    SET(UTILITIES Numerics/Spline2/einspline_allocator_kokkos.cpp ${UTILITIES})
+  ENDIF(QMC_USE_KOKKOS)
+  
   ADD_LIBRARY(qmcutil ${UTILITIES})
 
 

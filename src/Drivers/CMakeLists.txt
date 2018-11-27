@@ -1,6 +1,6 @@
 if(QMC_BUILD_LEVEL GREATER 4)
 # add apps XYZ.cpp, e.g., qmc_particles.cpp
-#SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
+#SET(ESTEST einspline_smp EinsplineSPO qmc_particles moveonsphere twobody ptclset)
 if(QMC_USE_KOKKOS)
   set(KOKKOS_SRC  ../QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp)
 endif(QMC_USE_KOKKOS)

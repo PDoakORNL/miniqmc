@@ -11,12 +11,18 @@
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "Devices.h"
 #include "Numerics/Spline2/einspline_allocator.h"
+#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
 
 template<>
-einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>* restrict spline)
+void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>* restrict spline,
+						int Nx,
+						int Ny,
+						int Nz,
+						int N)
 {
-  spline->coefs_view = multi_UBspline_3d_s::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
+  spline->coefs_view = multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
 
 
   //Check that data layout is as expected
@@ -26,7 +32,7 @@ einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*
   if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
       spline->z_stride != strides[2] || 1 != strides[3])
     fprintf(stderr,
-            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
+            "Kokkos View has non-compatible strides %ld %i | %ld %i | %ld %i\n",
             spline->x_stride,
             strides[0],
             spline->y_stride,
@@ -38,9 +44,13 @@ einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*
 }
 
 template<>
-einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>* restrict spline)
+void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>* restrict spline,
+						int Nx,
+						int Ny,
+						int Nz,
+						int N)
 {
-  spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
+  spline->coefs_view = multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
 
   //Check that data layout is as expected
   //
@@ -49,7 +59,7 @@ einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*
   if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
       spline->z_stride != strides[2] || 1 != strides[3])
     fprintf(stderr,
-            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
+            "Kokkos View has non-compatible strides %ld %i | %ld %i | %ld %i\n",
             spline->x_stride,
             strides[0],
             spline->y_stride,
@@ -59,3 +69,4 @@ einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*
 
   spline->coefs = spline->coefs_view.data();
 }
+

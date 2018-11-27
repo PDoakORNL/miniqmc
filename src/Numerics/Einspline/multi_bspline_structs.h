@@ -25,6 +25,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include "Devices.h"
+#include "Numerics/Einspline/bspline_base.h"
 #include "clean_inlining.h"
 
 using qmcplusplus::Devices;

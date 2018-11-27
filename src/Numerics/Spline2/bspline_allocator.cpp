@@ -86,6 +86,10 @@ void  Allocator<D>::allocateUBspline(UBspline_3d_s<D>* spline,
   return einspline_create_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
+template class Allocator<Devices::CPU>;
+#ifdef QMC_USE_KOKKOS
+template class Allocator<Devices::KOKKOS>;
+#endif
 
 } // namespace einspline
 } // namespace qmcplusplus

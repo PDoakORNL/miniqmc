@@ -41,13 +41,17 @@ struct SplineBound
 };
 
 template<typename T>
+struct MultiBsplineData;
+  
+
+template<typename T>
 struct MultiBsplineData
 {
   static const T A44[16];
   static const T dA44[16];
   static const T d2A44[16];
   static const T d3A44[16];
-
+  
   inline static void compute_prefactors(T a[4], T tx)
   {
     a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
@@ -72,7 +76,7 @@ struct MultiBsplineData
     d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
   }
 };
-
+  
 } // namespace qmcplusplus
 
 #endif

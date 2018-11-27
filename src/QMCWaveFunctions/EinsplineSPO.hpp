@@ -15,7 +15,7 @@
 //    Intel Corp.
 // ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file einspline_spo.hpp
+/** @file
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
@@ -27,28 +27,16 @@
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include "QMCWaveFunctions/SPOSet.h"
+
+#include "QMCWaveFunctions/SPOSetImp.h"
 #include <iostream>
 
 namespace qmcplusplus
 {
-template <Devices D, typename T>
-struct einspline_spo : public SPOSet<D>
+template <Devices DT, typename T>
+class EinsplineSPO : public SPOSetImp<DT>
 {
-  struct EvaluateVGHTag
-  {};
-  struct EvaluateVTag
-  {};
-  typedef Kokkos::TeamPolicy<Kokkos::Serial, EvaluateVGHTag> policy_vgh_serial_t;
-  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_parallel_t;
-  typedef Kokkos::TeamPolicy<Kokkos::Serial, EvaluateVTag> policy_v_serial_t;
-  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_parallel_t;
-
-  typedef typename policy_vgh_serial_t::member_type team_vgh_serial_t;
-  typedef typename policy_vgh_parallel_t::member_type team_vgh_parallel_t;
-  typedef typename policy_v_serial_t::member_type team_v_serial_t;
-  typedef typename policy_v_parallel_t::member_type team_v_parallel_t;
-
+public:
 
   // Whether to use Serial evaluation or not
   int nSplinesSerialThreshold_V;
@@ -58,12 +46,11 @@ struct einspline_spo : public SPOSet<D>
   using QMCT = QMCTraits;
   using PosType = QMCT::PosType;
 
+  // Base SPOSetImp
+  using BaseSPO = SPOSetImp<DT>;
+  
   /// define the einsplie data object type
-  using spline_type     = typename bspline_traits<D, T, 3>::SplineType;
-  using vContainer_type = Kokkos::View<T*>;
-  using gContainer_type = Kokkos::View<T * [3], Kokkos::LayoutLeft>;
-  using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
-  using lattice_type    = CrystalLattice<T, 3>;
+  using spline_type     = typename bspline_traits<DT, T, 3>::SplineType;
 
   /// number of blocks
   int nBlocks;
@@ -82,14 +69,9 @@ struct einspline_spo : public SPOSet<D>
 
   lattice_type Lattice;
   /// use allocator
-  einspline::Allocator<D> myAllocator;
+  einspline::Allocator<DT> myAllocator;
   /// compute engine
-  MultiBspline<D, T> compute_engine;
-
-  Kokkos::View<spline_type*> einsplines;
-  Kokkos::View<vContainer_type*> psi;
-  Kokkos::View<gContainer_type*> grad;
-  Kokkos::View<hContainer_type*> hess;
+  MultiBspline<DT, T> compute_engine;
 
   //Temporary position for communicating within Kokkos parallel sections.
   PosType tmp_pos;
@@ -97,7 +79,7 @@ struct einspline_spo : public SPOSet<D>
   NewTimer* timer;
 
   /// default constructor
-  einspline_spo()
+  EinsplineSPO()
       : nSplinesSerialThreshold_V(512),
         nSplinesSerialThreshold_VGH(128),
         nBlocks(0),
@@ -111,38 +93,28 @@ struct einspline_spo : public SPOSet<D>
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
   /// disable copy constructor
-  einspline_spo(const einspline_spo& in) = default;
+  EinsplineSPO(const EinsplineSPO& in) = default;
   /// disable copy operator
-  einspline_spo& operator=(const einspline_spo& in) = delete;
+  EinsplineSPO& operator=(const EinsplineSPO& in) = delete;
 
   /** copy constructor
-   * @param in einspline_spo
+   * @param in EinsplineSPO
    * @param team_size number of members in a team
    * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(const einspline_spo& in, int team_size, int member_id)
-      : Owner(false), Lattice(in.Lattice)
+  EinsplineSPO(const EinsplineSPO& in, int team_size, int member_id)
+    : Owner(false), Lattice(in.Lattice),
+      einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
-    nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
-    nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
-    nSplines                    = in.nSplines;
-    nSplinesPerBlock            = in.nSplinesPerBlock;
-    nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
-    firstBlock                  = nBlocks * member_id;
-    lastBlock                   = std::min(in.nBlocks, nBlocks * (member_id + 1));
-    nBlocks                     = lastBlock - firstBlock;
+    
     // einsplines.resize(nBlocks);
-    einsplines = Kokkos::View<spline_type*>("einsplines", nBlocks);
-    for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-      einsplines(i) = in.einsplines(t);
-    resize();
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 
   /// destructors
-  ~einspline_spo()
+  ~EinsplineSPO()
   {
     //Note the change in garbage collection here.  The reason for doing this is that by
     //changing einsplines to a view, it's more natural to work by reference than by raw pointer.
@@ -216,7 +188,7 @@ struct einspline_spo : public SPOSet<D>
 
       for (int i = 0; i < nBlocks; ++i)
       {
-        *myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)
@@ -252,35 +224,10 @@ struct einspline_spo : public SPOSet<D>
   }
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVTag&, const team_v_serial_t& team) const
-  {
-    int block               = team.league_rank();
-    auto u                  = Lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-  }
+  void operator()(const EvaluateVTag&, const team_v_serial_t& team) const;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-  {
-    int block               = team.league_rank();
-    auto u                  = Lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-  }
-
+  void operator()(const EvaluateVTag&, const team_v_parallel_t& team) const;
 
   /** evaluate psi */
   inline void evaluate_v_pfor(const PosType& p)
@@ -344,36 +291,11 @@ struct einspline_spo : public SPOSet<D>
   }
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVGHTag&, const team_vgh_parallel_t& team) const
-  {
-    int block = team.league_rank();
-    auto u    = Lattice.toUnit_floor(tmp_pos);
-    compute_engine.evaluate_vgh(team,
-                                &einsplines[block],
-                                u[0],
-                                u[1],
-                                u[2],
-                                psi(block).data(),
-                                grad(block).data(),
-                                hess(block).data(),
-                                psi(block).extent(0));
-  }
+  void operator()(const EvaluateVGHTag&, const team_vgh_parallel_t& team) const;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVGHTag&, const team_vgh_serial_t& team) const
-  {
-    int block = team.league_rank();
-    auto u    = Lattice.toUnit_floor(tmp_pos);
-    compute_engine.evaluate_vgh(team,
-                                &einsplines[block],
-                                u[0],
-                                u[1],
-                                u[2],
-                                psi(block).data(),
-                                grad(block).data(),
-                                hess(block).data(),
-                                psi(block).extent(0));
-  }
+  void operator()(const EvaluateVGHTag&, const team_vgh_serial_t& team) const;
+  
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh_pfor(const PosType& p)
   {
@@ -395,7 +317,47 @@ struct einspline_spo : public SPOSet<D>
     os << "SPO nBlocks=" << nBlocks << " firstBlock=" << firstBlock << " lastBlock=" << lastBlock
        << " nSplines=" << nSplines << " nSplinesPerBlock=" << nSplinesPerBlock << std::endl;
   }
+
+private:
+  EinsplineSPODevice<EinsplineSPODeviceImp<DT>> einspline_spo_device;
 };
+
+template<Devices DT, typename T>
+KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
+    operator()(const EvaluateVTag&, const team_v_serial_t& team) const
+{
+}
+
+template<Devices DT, typename T>
+KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
+    operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
+{
+}
+  
+template<typename T>
+KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
+operator()(const typename EvaluateVTag&,
+	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_serial_t& team) const
+{
+  int block               = team.league_rank();
+  auto u                  = Lattice.toUnit_floor(tmp_pos);
+  einsplines(block).coefs = einsplines(block).coefs_view.data();
+  compute_engine
+      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+}
+
+template<typename T>
+KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
+operator()(const typename EinsplineSPO<Devices::KOKKOS, T>::eEvaluateVTag&,
+	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_parallel_t& team) const
+{
+  int block               = team.league_rank();
+  auto u                  = Lattice.toUnit_floor(tmp_pos);
+  einsplines(block).coefs = einsplines(block).coefs_view.data();
+  compute_engine
+      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+}
+
 } // namespace qmcplusplus
 
 #endif
