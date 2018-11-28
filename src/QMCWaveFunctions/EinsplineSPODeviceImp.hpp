@@ -24,19 +24,22 @@ namespace qmcplusplus
 {
 template<Devices DT, typename T>
 class EinsplineSPODeviceImp
-{};
+{
+};
 }
 
-#include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.h"
+#include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.hpp"
 #ifdef QMC_USE_KOKKOS
-#include "QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.h"
+#include "QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.hpp"
 #endif
 
 namespace qmcplusplus
 {
-extern template class EinsplineSPODeviceImp<Devices::CPU>;
+extern template class EinsplineSPODeviceImp<Devices::CPU, float>;
+extern template class EinsplineSPODeviceImp<Devices::CPU, double>;
 #ifdef QMC_USE_KOKKOS
-extern template class EinsplineSPODeviceImp<Devices::KOKKOS>;
+extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
+extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
 #endif
 }
 
