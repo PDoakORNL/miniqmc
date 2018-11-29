@@ -17,26 +17,26 @@
  * @brief Shared definitions for EinsplineSPODevices
  */
 
-#ifndef QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_COMMON_H
-#define QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_COMMON_H
+#ifndef QMCPLUSPLUS_EINSPLINE_SPO_PARAMS_H
+#define QMCPLUSPLUS_EINSPLINE_SPO_PARAMS_H
 
 namespace qmcplusplus
 {
 template<typename T>
-class EinsplineSPODeviceCommon
+struct EinsplineSPOParams
 {
   /// number of blocks
   int nBlocks = 0;
   /// first logical block index
   int firstBlock = 0;
-  /// last gical block index
+  /// last logical block index
   int lastBlock = 0;
   /// number of splines
   int nSplines = 0;
   /// number of splines per block
-  int nSplinesPerBlock;
-  int nSplinesSerialThreshold_V;
-  int nSplinesSerialThreshold_VGH;
+  int nSplinesPerBlock = 0;
+  int nSplinesSerialThreshold_V = 0;
+  int nSplinesSerialThreshold_VGH = 0;
   
 
   /// if true, responsible for cleaning up einsplines
@@ -45,9 +45,8 @@ class EinsplineSPODeviceCommon
   bool is_copy = false;
 
   CrystalLattice<T, 3> lattice;
-  
 };
   
 }
 
-#endif //QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CPU_H
+#endif

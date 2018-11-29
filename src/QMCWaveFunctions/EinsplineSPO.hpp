@@ -27,6 +27,7 @@
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
+#include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/SPOSetImp.h"
@@ -39,10 +40,6 @@ class EinsplineSPO : public SPOSetImp<DT>
 {
 public:
 
-  // Whether to use Serial evaluation or not
-  int nSplinesSerialThreshold_V;
-  int nSplinesSerialThreshold_VGH;
-
   // Global Type Aliases
   using QMCT = QMCTraits;
   using PosType = QMCT::PosType;
@@ -50,25 +47,11 @@ public:
   // Base SPOSetImp
   using BaseSPO = SPOSetImp<DT>;
   
-  /// define the einsplie data object type
-  using spline_type     = typename bspline_traits<DT, T, 3>::SplineType;
-
-  
-  /// use allocator
-  einspline::Allocator<DT> myAllocator;
-  /// compute engine
-  MultiBspline<DT, T> compute_engine;
-
-  //Temporary position for communicating within Kokkos parallel sections.
-  PosType tmp_pos;
   /// Timer
   NewTimer* timer;
 
   /// default constructor
   EinsplineSPO()
-      : nSplinesSerialThreshold_V(512),
-        nSplinesSerialThreshold_VGH(128),
-        tmp_pos(0)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -117,146 +100,80 @@ public:
   /** evaluate psi */
   inline void evaluate_v(const PosType& p)
   {
-    ScopedTimer local_timer(timer);
-    tmp_pos = p;
-    compute_engine.copy_A44();
-    is_copy = true;
-    if (nSplines > nSplinesSerialThreshold_V)
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",
-                           policy_v_parallel_t(nBlocks, 1, 32),
-                           *this);
-    else
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial", policy_v_serial_t(nBlocks, 1, 32), *this);
-
-    is_copy = false;
-    //   auto u = Lattice.toUnit_floor(p);
-    //   for (int i = 0; i < nBlocks; ++i)
-    //    compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
+    einspline_spo_device.evaluate_v(p);
   }
 
-  /** evaluate psi */
+  /** evaluate psi probably for synced walker */
   inline void evaluate_v_pfor(const PosType& p)
   {
-    auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
+    einspline_spo_device.evaluate_v_pfor(p);
   }
 
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl(const PosType& p)
   {
-    auto u = Lattice.toUnit_floor(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
-  }
-
-  /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const PosType& p)
-  {
-    auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
+    einspline_spo_device.evaluate_vgl(p);
   }
 
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const PosType& p)
   {
-    ScopedTimer local_timer(timer);
-    tmp_pos = p;
-
-    is_copy = true;
-    compute_engine.copy_A44();
-
-    if (nSplines > nSplinesSerialThreshold_VGH)
-      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_parallel_t(nBlocks, 1, 32), *this);
-    else
-      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_serial_t(nBlocks, 1, 32), *this);
-    is_copy = false;
-    //auto u = Lattice.toUnit_floor(p);
-    //for (int i = 0; i < nBlocks; ++i)
-    //  compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
-    //                              psi(i).data(), grad(i).data(), hess(i).data(),
-    //                              nSplinesPerBlock);
-  }
-
-  
-  /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const PosType& p)
-  {
-    auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
+    einspline_spo_device.evaluate_vgh(p);
   }
 
   void print(std::ostream& os)
   {
-    os << "SPO nBlocks=" << nBlocks << " firstBlock=" << firstBlock << " lastBlock=" << lastBlock
-       << " nSplines=" << nSplines << " nSplinesPerBlock=" << nSplinesPerBlock << std::endl;
+    os << einspline_spo_device;
   }
 
+  void setLattice(const Tensor<T, 3>& lattice)
+  {
+    einspline_spo_device.setLattice(lattice);
+  }
+
+  const EinsplineSPOParams<T>& getParams()
+  {
+    return einspline_spo_device.getParams();
+  }
 private:
   EinsplineSPODevice<EinsplineSPODeviceImp<DT, T>, T> einspline_spo_device;
 };
 
-template<Devices DT, typename T>
-KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
-    operator()(const EvaluateVTag&, const team_v_serial_t& team) const
-{
-}
+// template<Devices DT, typename T>
+// KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
+//     operator()(const EvaluateVTag&, const team_v_serial_t& team) const
+// {
+// }
 
-template<Devices DT, typename T>
-KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
-    operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-{
-}
+// template<Devices DT, typename T>
+// KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
+//     operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
+// {
+// }
   
-template<typename T>
-KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
-operator()(const typename EvaluateVTag&,
-	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_serial_t& team) const
-{
-  int block               = team.league_rank();
-  auto u                  = Lattice.toUnit_floor(tmp_pos);
-  einsplines(block).coefs = einsplines(block).coefs_view.data();
-  compute_engine
-      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
-}
+// template<typename T>
+// KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
+// operator()(const typename EvaluateVTag&,
+// 	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_serial_t& team) const
+// {
+//   int block               = team.league_rank();
+//   auto u                  = Lattice.toUnit_floor(tmp_pos);
+//   einsplines(block).coefs = einsplines(block).coefs_view.data();
+//   compute_engine
+//       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+// }
 
-template<typename T>
-KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
-operator()(const typename EinsplineSPO<Devices::KOKKOS, T>::eEvaluateVTag&,
-	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_parallel_t& team) const
-{
-  int block               = team.league_rank();
-  auto u                  = Lattice.toUnit_floor(tmp_pos);
-  einsplines(block).coefs = einsplines(block).coefs_view.data();
-  compute_engine
-      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
-}
+// template<typename T>
+// KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
+// operator()(const typename EinsplineSPO<Devices::KOKKOS, T>::eEvaluateVTag&,
+// 	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_parallel_t& team) const
+// {
+//   int block               = team.league_rank();
+//   auto u                  = Lattice.toUnit_floor(tmp_pos);
+//   einsplines(block).coefs = einsplines(block).coefs_view.data();
+//   compute_engine
+//       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+// }
 
 } // namespace qmcplusplus
 

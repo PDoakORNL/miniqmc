@@ -22,14 +22,14 @@
 
 #include "Devices.h"
 #include "clean_inlining.h"
-#include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
 #include "Utilities/Configuration.h"
+#include "Utilities/NewTimer.h"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
-#include "QMCWaveFunctions/EinsplineSPODeviceCommon.hpp"
+#include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
 
 namespace qmcplusplus
@@ -37,10 +37,9 @@ namespace qmcplusplus
 
 template<typename T>
 class EinsplineSPODeviceImp<Devices::CPU, T>
-  : public EinsplineSPODeviceCommon<T>,
-    public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
+  : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
 {
-  using ESDC = EinsplineSPODeviceCommon<T>;
+
   /// define the einsplie data object type
   using spline_type     = typename bspline_traits<Devices::CPU, T, 3>::SplineType;
   using vContainer_type = aligned_vector<T>;
@@ -58,22 +57,23 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
 
-
+  EinsplineSPOParams<T> esp;
+  
   //Copy Constructor only supports CPU to CPU
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
                         int team_size,
                         int member_id)
   {
-    ESDC::nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
-    ESDC::nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
-    ESDC::nSplines                    = in.nSplines;
-    ESDC::nSplinesPerBlock            = in.nSplinesPerBlock;
-    ESDC::nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
-    ESDC::firstBlock                  = ESDC::nBlocks * member_id;
-    ESDC::lastBlock                   = std::min(in.nBlocks, ESDC::nBlocks * (member_id + 1));
-    ESDC::nBlocks                     = ESDC::lastBlock - ESDC::firstBlock;
-    einsplines.resize(ESDC::nBlocks);
-    for (int i = 0, t = ESDC::firstBlock; i < ESDC::nBlocks; ++i, ++t)
+    esp.nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
+    esp.nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
+    esp.nSplines                    = in.nSplines;
+    esp.nSplinesPerBlock            = in.nSplinesPerBlock;
+    esp.nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
+    esp.firstBlock                  = esp.nBlocks * member_id;
+    esp.lastBlock                   = std::min(in.nBlocks, esp.nBlocks * (member_id + 1));
+    esp.nBlocks                     = esp.lastBlock - esp.firstBlock;
+    einsplines.resize(esp.nBlocks);
+    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines[i] = in.einsplines[t];
     resize();
   }
@@ -81,22 +81,22 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
     /// destructors
   ~EinsplineSPODeviceImp()
   {
-    if (ESDC::Owner)
-      for (int i = 0; i < ESDC::nBlocks; ++i)
+    if (esp.Owner)
+      for (int i = 0; i < esp.nBlocks; ++i)
         myAllocator.destroy(einsplines[i]);
   }
 
   /// resize the containers
   void resize()
   {
-    psi.resize(ESDC::nBlocks);
-    grad.resize(ESDC::nBlocks);
-    hess.resize(ESDC::nBlocks);
-    for (int i = 0; i < ESDC::nBlocks; ++i)
+    psi.resize(esp.nBlocks);
+    grad.resize(esp.nBlocks);
+    hess.resize(esp.nBlocks);
+    for (int i = 0; i < esp.nBlocks; ++i)
     {
-      psi[i].resize(ESDC::nSplinesPerBlock);
-      grad[i].resize(ESDC::nSplinesPerBlock);
-      hess[i].resize(ESDC::nSplinesPerBlock);
+      psi[i].resize(esp.nSplinesPerBlock);
+      grad[i].resize(esp.nSplinesPerBlock);
+      hess[i].resize(esp.nSplinesPerBlock);
     }
   }
 

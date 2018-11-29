@@ -15,6 +15,8 @@
 #define QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_H
 
 #include "Devices.h" 
+#include <ostream>
+#include "QMCWaveFunctions/EinsplineSPOParams.h"
 
 /** @file
  * Here EinsplineSPO device implementations are included
@@ -22,12 +24,20 @@
 
 namespace qmcplusplus
 {
+  
 template<Devices DT, typename T>
 class EinsplineSPODeviceImp
 {
 };
+template<Devices DT, typename T>
+std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi)
+{
+  const EinsplineSPOParams<T>& e = espodi.getParams();
+  os  << "SPO nBlocks=" << e.nBlocks << " firstBlock=" << e.firstBlock << " lastBlock=" << e.lastBlock
+      << " nSplines=" << e.nSplines << " nSplinesPerBlock=" << e.nSplinesPerBlock << '\n';
 }
 
+}
 #include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.hpp"
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.hpp"

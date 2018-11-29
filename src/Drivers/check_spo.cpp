@@ -188,7 +188,7 @@ int main(int argc, char** argv)
                     << SPO_coeff_size_MB << " MB)" << endl;
 
       spo_main.set(nx, ny, nz, norb, nTiles);
-      spo_main.Lattice.set(lattice_b);
+      spo_main.setLattice(lattice_b);
       spo_ref_main.set(nx, ny, nz, norb, nTiles);
       spo_ref_main.Lattice.set(lattice_b);
     }
@@ -258,8 +258,9 @@ int main(int argc, char** argv)
           spo.evaluate_vgh(pos);
           spo_ref.evaluate_vgh(pos);
           // accumulate error
-          for (int ib = 0; ib < spo.nBlocks; ib++)
-            for (int n = 0; n < spo.nSplinesPerBlock; n++)
+	  const EinsplineSPOParams<RealType>& spop = spo.getParams();
+          for (int ib = 0; ib < spop.nBlocks; ib++)
+            for (int n = 0; n < spop.nSplinesPerBlock; n++)
             {
               // value
               evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);

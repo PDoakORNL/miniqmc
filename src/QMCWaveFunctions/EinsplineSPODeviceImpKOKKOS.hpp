@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <type_traits>
 #include "Utilities/Configuration.h"
+#include "QMCWaveFunctions/EinsplineSPOParams.h"
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
 #include "cusolverDn.h"
@@ -35,16 +36,16 @@ namespace qmcplusplus
 {
 template<typename T>
 class EinsplineSPODeviceImp<Devices::KOKKOS, T>
-  : public EinsplineSPODeviceCommon<T>,
-    public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS,T>, T>
+  : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS,T>, T>
 {
+  static constexpr Devices DT = Devices::KOKKOS;
   struct EvaluateVGHTag
   {};
   struct EvaluateVTag
   {};
   using QMCT = QMCTraits;
-  using ESDC = EinsplineSPODeviceCommon<T>;
-  using spline_type     = typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType;
+  EinsplineSPOParams<T> esp;
+  using spline_type     = typename bspline_traits<DT, T, 3>::SplineType;
 
   typedef Kokkos::TeamPolicy<Kokkos::Serial, EvaluateVGHTag> policy_vgh_serial_t;
   typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_parallel_t;
@@ -66,22 +67,39 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
   Kokkos::View<gContainer_type*> grad;
   Kokkos::View<hContainer_type*> hess;
 
+  /// use allocator
+  einspline::Allocator<DT> myAllocator;
+  /// compute engine
+  MultiBspline<DT, T> compute_engine;
+  //Temporary position for communicating within Kokkos parallel sections.
+  QMCT::PosType tmp_pos;
+  NewTimer* timer;
+  /// define the einsplie data object type
 
+  EinsplineSPODeviceImp()
+    : tmp_pos(0)
+  {
+    esp.nSplinesSerialThreshold_V = 512;
+    esp.nSplinesSerialThreshold_VGH = 128;
+    timer = TimerManager.createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
+  }
+  
   //Copy Constructor only supports KOKKOS to KOKKOS
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS, T>, T>& in,
                         int team_size,
                         int member_id)
   {
-    ESDC::nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
-    ESDC::nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
-    ESDC::nSplines                    = in.nSplines;
-    ESDC::nSplinesPerBlock            = in.nSplinesPerBlock;
-    ESDC::nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
-    ESDC::firstBlock                  = ESDC::nBlocks * member_id;
-    ESDC::lastBlock                   = std::min(in.nBlocks, ESDC::nBlocks * (member_id + 1));
-    ESDC::nBlocks                     = ESDC::lastBlock - ESDC::firstBlock;
-    einsplines                  = Kokkos::View<spline_type*>("einsplines", ESDC::nBlocks);
-    for (int i = 0, t = ESDC::firstBlock; i < ESDC::nBlocks; ++i, ++t)
+    timer = TimerManager.createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
+    esp.nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
+    esp.nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
+    esp.nSplines                    = in.nSplines;
+    esp.nSplinesPerBlock            = in.nSplinesPerBlock;
+    esp.nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
+    esp.firstBlock                  = esp.nBlocks * member_id;
+    esp.lastBlock                   = std::min(in.nBlocks, esp.nBlocks * (member_id + 1));
+    esp.nBlocks                     = esp.lastBlock - esp.firstBlock;
+    einsplines                  = Kokkos::View<spline_type*>("einsplines", esp.nBlocks);
+    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines(i) = in.einsplines(t);
     resize();
   }
@@ -93,26 +111,26 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
     //    grad.resize(nBlocks);
     //    hess.resize(nBlocks);
 
-    psi  = Kokkos::View<vContainer_type*>("Psi", ESDC::nBlocks);
-    grad = Kokkos::View<gContainer_type*>("Grad", ESDC::nBlocks);
-    hess = Kokkos::View<hContainer_type*>("Hess", ESDC::nBlocks);
+    psi  = Kokkos::View<vContainer_type*>("Psi", esp.nBlocks);
+    grad = Kokkos::View<gContainer_type*>("Grad", esp.nBlocks);
+    hess = Kokkos::View<hContainer_type*>("Hess", esp.nBlocks);
 
-    for (int i = 0; i < ESDC::nBlocks; ++i)
+    for (int i = 0; i < esp.nBlocks; ++i)
     {
       //psi[i].resize(nSplinesPerBlock);
       //grad[i].resize(nSplinesPerBlock);
       //hess[i].resize(nSplinesPerBlock);
 
       //Using the "view-of-views" placement-new construct.
-      new (&psi(i)) vContainer_type("psi_i", ESDC::nSplinesPerBlock);
-      new (&grad(i)) gContainer_type("grad_i", ESDC::nSplinesPerBlock);
-      new (&hess(i)) hContainer_type("hess_i", ESDC::nSplinesPerBlock);
+      new (&psi(i)) vContainer_type("psi_i", esp.nSplinesPerBlock);
+      new (&grad(i)) gContainer_type("grad_i", esp.nSplinesPerBlock);
+      new (&hess(i)) hContainer_type("hess_i", esp.nSplinesPerBlock);
     }
   }
 
   ~EinsplineSPODeviceImp()
   {
-    if (!ESDC::is_copy)
+    if (!esp.is_copy)
     {
       einsplines = Kokkos::View<spline_type*>();
       for (int i = 0; i < psi.extent(0); i++)
@@ -129,31 +147,31 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
 
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
-    ESDC::nSplines         = num_splines;
-    ESDC::nBlocks          = nblocks;
-    ESDC::nSplinesPerBlock = num_splines / nblocks;
-    ESDC::firstBlock       = 0;
-    ESDC::lastBlock        = nblocks;
+    esp.nSplines         = num_splines;
+    esp.nBlocks          = nblocks;
+    esp.nSplinesPerBlock = num_splines / nblocks;
+    esp.firstBlock       = 0;
+    esp.lastBlock        = nblocks;
     if (einsplines.extent(0) == 0)
     {
-      ESDC::Owner = true;
+      esp.Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
       QMCT::PosType start(0);
       QMCT::PosType end(1);
 
       //    einsplines.resize(nBlocks);
-      einsplines = Kokkos::View<spline_type*>("einsplines", nBlocks);
+      einsplines = Kokkos::View<spline_type*>("einsplines", nblocks);
 
       RandomGenerator<T> myrandom(11);
       //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
       Kokkos::View<T***> coef_data("coef_data", nx + 3, ny + 3, nz + 3);
 
-      for (int i = 0; i < ESDC::nBlocks; ++i)
+      for (int i = 0; i < esp.nBlocks; ++i)
       {
-        myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
         if (init_random)
         {
-          for (int j = 0; j < nSplinesPerBlock; ++j)
+          for (int j = 0; j < esp.nSplinesPerBlock; ++j)
           {
             // Generate different coefficients for each orbital
             myrandom.generate_uniform(coef_data.data(), coef_data.extent(0));
@@ -165,6 +183,80 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
     resize();
   }
 
+  inline void evaluate_v(const QMCT::PosType& p)
+  {
+    ScopedTimer local_timer(timer);
+    tmp_pos = p;
+    compute_engine.copy_A44();
+    esp.is_copy = true;
+    if (esp.nSplines > esp.nSplinesSerialThreshold_V)
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",
+                           policy_v_parallel_t(esp.nBlocks, 1, 32),
+                           *this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial", policy_v_serial_t(esp.nBlocks, 1, 32), *this);
+
+    esp.is_copy = false;
+    //   auto u = Lattice.toUnit_floor(p);
+    //   for (int i = 0; i < nBlocks; ++i)
+    //    compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
+  }
+
+  /** evaluate psi */
+  inline void evaluate_v_pfor(const QMCT::PosType& p)
+  {
+    auto u = esp.Lattice.toUnit_floor(p);
+    //Why is this in kokkos Imp
+#pragma omp for nowait
+    for (int i = 0; i < esp.nBlocks; ++i)
+      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), esp.nSplinesPerBlock);
+  }
+
+  inline void evaluate_vgl(const QMCT::PosType& p)
+  {
+    auto u = esp.lattice.toUnit_floor(p);
+      for (int i = 0; i < esp.nBlocks; ++i)
+        compute_engine.evaluate_vgl(&einsplines(i),
+                                  u[0],
+                                  u[1],
+                                  u[2],
+                                  psi(i).data(),
+                                  grad(i).data(),
+                                  hess(i).data(),
+				    esp.nSplinesPerBlock);
+  }
+
+  /** evaluate psi, grad and hess */
+  inline void evaluate_vgh(const QMCT::PosType& p)
+  {
+    ScopedTimer local_timer(timer);
+    tmp_pos = p;
+
+    esp.is_copy = true;
+    compute_engine.copy_A44();
+
+    if (esp.nSplines > esp.nSplinesSerialThreshold_VGH)
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_parallel_t(esp.nBlocks, 1, 32), *this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_serial_t(esp.nBlocks, 1, 32), *this);
+    esp.is_copy = false;
+    //auto u = Lattice.toUnit_floor(p);
+    //for (int i = 0; i < nBlocks; ++i)
+    //  compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
+    //                              psi(i).data(), grad(i).data(), hess(i).data(),
+    //                              nSplinesPerBlock);
+  }
+
+  void setLattice(Tensor<T ,3>& lattice_b)
+  {
+    esp.lattice.set(lattice_b);
+  }
+
+  const EinsplineSPOParams<T>& getParams()
+  {
+    return esp;
+  }
+  
   KOKKOS_INLINE_FUNCTION
   void operator()(const EvaluateVTag&, const team_v_serial_t& team) const;
 
@@ -178,6 +270,7 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
   void operator()(const EvaluateVGHTag&, const team_vgh_serial_t& team) const;
 };
 
+  
 } // namespace qmcpluplus
 
 #endif
