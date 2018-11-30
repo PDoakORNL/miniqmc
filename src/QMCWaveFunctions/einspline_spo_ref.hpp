@@ -34,7 +34,7 @@ namespace miniqmcreference
 using namespace qmcplusplus;
 
 template<typename T>
-struct einspline_spo_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
+struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
 {
   using QMCT = QMCTraits;
   /// define the einsplie data object type
@@ -71,14 +71,14 @@ struct einspline_spo_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   NewTimer* timer;
 
   /// default constructor
-  einspline_spo_ref() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+  EinsplineSPO_ref() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
   /// disable copy constructor
-  einspline_spo_ref(const einspline_spo_ref& in) = delete;
+  EinsplineSPO_ref(const EinsplineSPO_ref& in) = delete;
   /// disable copy operator
-  einspline_spo_ref& operator=(const einspline_spo_ref& in) = delete;
+  EinsplineSPO_ref& operator=(const EinsplineSPO_ref& in) = delete;
 
   /** copy constructor
    * @param in einspline_spo_ref
@@ -87,7 +87,7 @@ struct einspline_spo_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo_ref(const einspline_spo_ref& in, int team_size, int member_id)
+  EinsplineSPO_ref(const EinsplineSPO_ref& in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
@@ -105,7 +105,7 @@ struct einspline_spo_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   }
 
   /// destructors
-  ~einspline_spo_ref()
+  ~EinsplineSPO_ref()
   {
     //Note the change in garbage collection here.  The reason for doing this is that by
     //changing einsplines to a view, it's more natural to work by reference than by raw pointer.

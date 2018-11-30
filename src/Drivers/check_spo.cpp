@@ -25,6 +25,8 @@
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/EinsplineSPO.hpp>
+#include "QMCWaveFunctions/EinsplineSPODevice.hpp"
+#include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
@@ -157,7 +159,7 @@ int main(int argc, char** argv)
 
     using spo_type = EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>;
     spo_type spo_main;
-    using spo_ref_type = miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
+    using spo_ref_type = miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
     spo_ref_type spo_ref_main;
     int nTiles = 1;
 
@@ -246,6 +248,8 @@ int main(int argc, char** argv)
 
       int my_accepted = 0, my_vals = 0;
 
+      const EinsplineSPOParams<RealType>& spop = spo.getParams();
+
       for (int mc = 0; mc < nsteps; ++mc)
       {
         random_th.generate_normal(&delta[0][0], nels3);
@@ -258,23 +262,22 @@ int main(int argc, char** argv)
           spo.evaluate_vgh(pos);
           spo_ref.evaluate_vgh(pos);
           // accumulate error
-	  const EinsplineSPOParams<RealType>& spop = spo.getParams();
           for (int ib = 0; ib < spop.nBlocks; ib++)
             for (int n = 0; n < spop.nSplinesPerBlock; n++)
             {
               // value
-              evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+              evalVGH_v_err += std::fabs(spo.getPsi(ib,n) - spo_ref.psi[ib][n]);
               // grad
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 0) - spo_ref.grad[ib](n, 0));
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 1) - spo_ref.grad[ib](n, 1));
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 2) - spo_ref.grad[ib](n, 2));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 0) - spo_ref.grad[ib](n, 0));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 1) - spo_ref.grad[ib](n, 1));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 2) - spo_ref.grad[ib](n, 2));
               // hess
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 0) - spo_ref.hess[ib](n, 0));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 1) - spo_ref.hess[ib](n, 1));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 2) - spo_ref.hess[ib](n, 2));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 3) - spo_ref.hess[ib](n, 3));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 4) - spo_ref.hess[ib](n, 4));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 5) - spo_ref.hess[ib](n, 5));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 0) - spo_ref.hess[ib](n, 0));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 1) - spo_ref.hess[ib](n, 1));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 2) - spo_ref.hess[ib](n, 2));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 3) - spo_ref.hess[ib](n, 3));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.hess[ib](n, 4));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.hess[ib](n, 5));
             }
           if (ur[iel] > accept)
           {
@@ -300,9 +303,9 @@ int main(int argc, char** argv)
               spo.evaluate_v(pos);
               spo_ref.evaluate_v(pos);
               // accumulate error
-              for (int ib = 0; ib < spo.nBlocks; ib++)
-                for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                  evalV_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+              for (int ib = 0; ib < spop.nBlocks; ib++)
+                for (int n = 0; n < spop.nSplinesPerBlock; n++)
+                  evalV_v_err += std::fabs(spo.getPsi(ib,n) - spo_ref.psi[ib][n]);
             }
           } // els
         }   // ions

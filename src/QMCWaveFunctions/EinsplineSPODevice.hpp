@@ -16,28 +16,91 @@
 
 #include "Devices.h"
 #include "Utilities/Configuration.h"
+#include "QMCWaveFunctions/EinsplineSPOParams.h"
 
 /** @file
  * CRTP base class for Einspline SPO Devices
  */
 namespace qmcplusplus
 {
+
 template<class DEVICEIMP, typename T>
 class EinsplineSPODevice
 {
 public:
   using QMCT = QMCTraits;
 
+  EinsplineSPODevice(const EinsplineSPODevice<DEVICEIMP ,T>& espd,
+		     int team_size,
+		     int member_id)
+  {}
+
+  EinsplineSPODevice() = default;
+  
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
-    static_cast<DEVICEIMP*>(this)->set(nx,
-				       ny,
-				       nz,
-				       num_splines,
-				       nblocks,
-				       init_random);
+    impl().set(nx,
+	       ny,
+	       nz,
+	       num_splines,
+	       nblocks,
+	       init_random);
   }
+
+  inline void evaluate_v(const QMCT::PosType& p)
+  {
+    impl().evaluate_v(p);
+  }
+
+  inline void evaluate_vgh(const QMCT::PosType& p)
+  {
+    impl().evaluate_vgh(p);
+  }
+
+  void evaluate_vgl(const QMCT::PosType& p)
+  {
+    impl().evaluate_vgl(p);
+  }
+
+  T getPsi(int ib, int n)
+  {
+    return impl().getPsi(ib,
+	       n);
+  }
+
+  T getGrad(int ib, int n, int m)
+  {
+    return impl().getGrad(ib,
+			  n, m);
+  }
+
+  T getHess(int ib, int n, int m)
+  {
+    return impl().getHess(ib,
+			  n, m);
+  }
+
+  const EinsplineSPOParams<T>& getParams() const
+  {
+    return implConst().getParams();
+  }
+
+  void setLattice(const Tensor<T, 3>& lattice)
+  {
+    impl().setLattice(lattice);
+  }
+
+  void* getEinspline(int i) const
+  {
+    return implConst().getEinspline(i);
+  }
+  
+private:
+  DEVICEIMP& impl() { return *static_cast<DEVICEIMP*>(this); }
+  const DEVICEIMP& implConst() const { return *static_cast<const DEVICEIMP*>(this); }
+  
 };
+
 } // namespace qmcplusplus
 
 #endif

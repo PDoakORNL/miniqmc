@@ -474,5 +474,8 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<D, T>::evaluate_vgh(const TeamType& tea
   });
 }
 
+extern template class MultiBsplineData<float>;
+extern template class MultiBsplineData<double>;
+
 } // namespace qmcplusplus
 #endif

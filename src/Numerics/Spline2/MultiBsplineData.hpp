@@ -50,8 +50,20 @@ struct MultiBsplineData
   static const T A44[16];
   static const T dA44[16];
   static const T d2A44[16];
-  static const T d3A44[16];
-  
+  //static const T d3A44[16];
+
+// QMC_ALIGNAS static constexpr T A44[16] = {
+//     -1.0 / 6.0, 3.0 / 6.0, -3.0 / 6.0, 1.0 / 6.0, 3.0 / 6.0, -6.0 / 6.0,
+//     0.0 / 6.0,  4.0 / 6.0, -3.0 / 6.0, 3.0 / 6.0, 3.0 / 6.0, 1.0 / 6.0,
+//     1.0 / 6.0,  0.0 / 6.0, 0.0 / 6.0,  0.0 / 6.0};
+
+// QMC_ALIGNAS static constexpr T dA44[16] = {0.0, -0.5, 1.0, -0.5, 0.0, 1.5, -2.0, 0.0,
+//     0.0, -1.5, 1.0, 0.5,  0.0, 0.5, 0.0,  0.0};
+
+// QMC_ALIGNAS static constexpr T d2A44[16] = {
+//     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
+//     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
+
   inline static void compute_prefactors(T a[4], T tx)
   {
     a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
@@ -76,7 +88,7 @@ struct MultiBsplineData
     d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
   }
 };
-  
+
 } // namespace qmcplusplus
 
 #endif

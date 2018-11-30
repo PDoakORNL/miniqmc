@@ -14,7 +14,7 @@
 
 #include "QMCWaveFunctions/SPOSetImp.h"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
-#include "QMCWaveFunctions/EinsplineSPO_ref.hpp"
+#include "QMCWaveFunctions/einspline_spo_ref.hpp"
 
 namespace qmcplusplus
 {
@@ -43,7 +43,7 @@ public:
   {
     auto* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
     spo_main->set(nx, ny, nz, num_splines, nblocks);
-    spo_main->Lattice.set(lattice_b);
+    spo_main->setLattice(lattice_b);
     return dynamic_cast<SPOSet*>(spo_main);
   }
 }

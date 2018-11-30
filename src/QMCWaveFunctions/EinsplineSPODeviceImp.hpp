@@ -17,7 +17,7 @@
 #include "Devices.h" 
 #include <ostream>
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
-
+#include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 /** @file
  * Here EinsplineSPO device implementations are included
  */
@@ -45,11 +45,9 @@ std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi
 
 namespace qmcplusplus
 {
-extern template class EinsplineSPODeviceImp<Devices::CPU, float>;
-extern template class EinsplineSPODeviceImp<Devices::CPU, double>;
 #ifdef QMC_USE_KOKKOS
-extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
-extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
+  //extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
+  //extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
 #endif
 }
 

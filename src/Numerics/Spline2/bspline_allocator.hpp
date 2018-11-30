@@ -45,15 +45,8 @@ public:
   ~Allocator();
 
   template<typename SplineType>
-  void destroy(SplineType* spline)
-  {
-    //Assign coefs_view to empty view because of Kokkos reference counting
-    // and garbage collection.
-    //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
-    spline->coefs_view = SplineType::coefs_view_t();
-    free(spline);
-  }
-
+  void destroy(SplineType* spline);
+  
   /// allocate a single multi-bspline
   void allocateMultiBspline(multi_UBspline_3d_s<D>* spline,
 					       Ugrid x_grid,

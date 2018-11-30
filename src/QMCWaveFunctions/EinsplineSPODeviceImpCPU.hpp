@@ -20,17 +20,22 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CPU_H
 #define QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CPU_H
 
+#include <boost/hana/fwd/define_struct.hpp>
 #include "Devices.h"
 #include "clean_inlining.h"
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
+#include "Numerics/Containers.h"
+#include "Utilities/SIMD/allocator.hpp"
 #include "Utilities/Configuration.h"
 #include "Utilities/NewTimer.h"
-#include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
+#include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
+#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/MultiBspline.hpp"
 
 namespace qmcplusplus
 {
@@ -52,29 +57,32 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   /// compute engine
   MultiBspline<Devices::CPU, T> compute_engine;
 
+  using einspline_type = spline_type*;
   aligned_vector<spline_type*> einsplines;
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
 
   EinsplineSPOParams<T> esp;
-  
+
+public:
   //Copy Constructor only supports CPU to CPU
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
+  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>,T>& in,
                         int team_size,
                         int member_id)
   {
-    esp.nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
-    esp.nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
-    esp.nSplines                    = in.nSplines;
-    esp.nSplinesPerBlock            = in.nSplinesPerBlock;
-    esp.nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
+    const EinsplineSPOParams<T>& inesp = in.getParams();
+    esp.nSplinesSerialThreshold_V   = inesp.nSplinesSerialThreshold_V;
+    esp.nSplinesSerialThreshold_VGH = inesp.nSplinesSerialThreshold_VGH;
+    esp.nSplines                    = inesp.nSplines;
+    esp.nSplinesPerBlock            = inesp.nSplinesPerBlock;
+    esp.nBlocks                     = (inesp.nBlocks + team_size - 1) / team_size;
     esp.firstBlock                  = esp.nBlocks * member_id;
-    esp.lastBlock                   = std::min(in.nBlocks, esp.nBlocks * (member_id + 1));
+    esp.lastBlock                   = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                     = esp.lastBlock - esp.firstBlock;
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      einsplines[i] = in.einsplines[t];
+      einsplines[i] = static_cast<einspline_type>(in.getEinspline(t));
     resize();
   }
 
@@ -100,7 +108,26 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
     }
   }
 
+  const EinsplineSPOParams<T>& getParams() const
+  {
+    return esp;
+  }
+
+  void* getEinspline(int i) const
+  {
+    return einsplines[i];
+  }
+  
+  void setEinspline(void* in_einspline,
+		    int i)
+  {
+    einsplines[i] = static_cast<einspline_type>(in_einspline);
+  }
+
 };
+
+extern template class EinsplineSPODeviceImp<Devices::CPU, float>;
+extern template class EinsplineSPODeviceImp<Devices::CPU, double>;
 
 } // namespace qmcpluplus
 

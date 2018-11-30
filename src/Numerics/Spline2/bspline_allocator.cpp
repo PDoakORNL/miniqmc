@@ -15,6 +15,7 @@
  * Allocator::Policy is not defined precisely yet but is intended to select
  * the specialized allocator.
  */
+#include "Devices.h"
 #include "Numerics/Spline2/bspline_allocator.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 
@@ -57,6 +58,25 @@ Allocator<D>::Allocator() : Policy(0) {}
 
 template<Devices D>
 Allocator<D>::~Allocator() {}
+
+template<>
+template<typename SplineType>
+void Allocator<Devices::KOKKOS>::destroy(SplineType* spline)
+{
+    //Assign coefs_view to empty view because of Kokkos reference counting
+    // and garbage collection.
+    //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
+    spline->coefs_view = SplineType::coefs_view_t();
+    free(spline);
+}
+
+template<>
+template<typename SplineType>
+void Allocator<Devices::CPU>::destroy(SplineType* spline)
+{
+  einspline_free(spline->coefs);
+  free(spline);
+}
 
 template<Devices D>
 void Allocator<D>::allocateMultiBspline(multi_UBspline_3d_s<D>* spline,

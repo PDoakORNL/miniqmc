@@ -21,6 +21,7 @@
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 #include "DeterminantDevice.h"
+#include "DeterminantDeviceImp.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 
 #include "Utilities/Configuration.h"
@@ -309,6 +310,9 @@ private:
   aligned_vector<double> work;
   Matrix<QMCT::RealType> psiMsave;
 };
+
+extern template class DeterminantDeviceImp<Devices::CPU>;
+
 } // namespace qmcplusplus
 
 #endif

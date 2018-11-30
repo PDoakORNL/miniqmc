@@ -135,6 +135,23 @@ public:
   {
     return einspline_spo_device.getParams();
   }
+
+  ///Access to elements in psi
+  T getPsi(int ib, int n)
+  {
+    return einspline_spo_device.getPsi(ib, n);
+  }
+
+  T getGrad(int ib, int n, int m)
+  {
+    return einspline_spo_device.getGrad(ib, n, m);
+  }
+
+  T getHess(int ib, int n, int m)
+  {
+    return einspline_spo_device.getHess(ib, n, m);
+  }
+
 private:
   EinsplineSPODevice<EinsplineSPODeviceImp<DT, T>, T> einspline_spo_device;
 };

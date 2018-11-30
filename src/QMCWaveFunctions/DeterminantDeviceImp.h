@@ -35,7 +35,6 @@ class DeterminantDeviceImp
 
 namespace qmcplusplus
 {
-  extern template class DeterminantDeviceImp<Devices::CPU>;
 }
 
 #endif

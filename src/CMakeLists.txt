@@ -150,7 +150,15 @@ ENDIF()
   
   ADD_LIBRARY(qmcutil ${UTILITIES})
 
+  if(QMC_USE_KOKKOS)
+    set(KOKKOS_SRC  QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
+      QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp)
+  endif(QMC_USE_KOKKOS)
 
+  ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
+    QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC})
+
+  
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
     TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")
