@@ -17,11 +17,16 @@ ENDFOREACH(p ${ESTEST})
 # TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp
-  ../QMCWaveFunctions/SPOSet_builder.cpp ${KOKKOS_SRCS})
+  ../QMCWaveFunctions/SPOSet_builder.cpp ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
 
 SET(DRIVERS miniqmc) # miniqmc_sync_move)
 
-ADD_LIBRARY(mini_functions MiniqmcDriverFunctions.cpp)
+
+SET(MINI_FUNCTIONS_SRC MiniqmcDriverFunctions.cpp)
+IF(QMC_USE_KOKKOS)
+  SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} MiniqmcDriverFunctionsKokkos.cpp)
+ENDIF(QMC_USE_KOKKOS)
+ADD_LIBRARY(mini_functions ${MINI_FUNCTIONS_SRC})
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p} MiniqmcOptions.cpp MiniqmcDriver.cpp ${p}.cpp)

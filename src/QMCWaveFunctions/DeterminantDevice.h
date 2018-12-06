@@ -21,7 +21,7 @@
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_H
 
 #include "clean_inlining.h"
-#include <impl/Kokkos_Timer.hpp>
+//#include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>

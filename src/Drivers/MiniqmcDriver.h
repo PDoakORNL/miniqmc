@@ -175,15 +175,15 @@ private:
     {
       std::cout << "================================== " << '\n';
 
-      mq_opt_.Timers[mq_opt_.Timer_Total]->stop();
-      TimerManager.print();
+      mq_opt_.Timers[Timer_Total]->stop();
+      TimerManagerClass::get().print();
 
       XMLDocument doc;
       XMLNode* resources = doc.NewElement("resources");
       XMLNode* hardware  = doc.NewElement("hardware");
       resources->InsertEndChild(hardware);
       doc.InsertEndChild(resources);
-      XMLNode* timing = TimerManager.output_timing(doc);
+      XMLNode* timing = TimerManagerClass::get().output_timing(doc);
       resources->InsertEndChild(timing);
 
       XMLNode* particle_info = doc.NewElement("particles");

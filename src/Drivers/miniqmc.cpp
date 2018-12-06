@@ -110,6 +110,8 @@ using namespace std;
 using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
+  //int my_int;
+  //std::cout << my_int;
   try
   {
     MiniqmcOptions mq_opt= readOptions(argc, argv);

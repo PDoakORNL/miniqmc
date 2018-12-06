@@ -151,13 +151,15 @@ ENDIF()
   ADD_LIBRARY(qmcutil ${UTILITIES})
 
   if(QMC_USE_KOKKOS)
-    set(KOKKOS_SRC  QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
+    target_link_libraries(qmcutil kokkos)
+    set(KOKKOS_SRC QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
       QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp)
+    set(QMCDEVICE_LINK_LIBRARIES kokkos)
   endif(QMC_USE_KOKKOS)
 
   ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
     QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC})
-
+  target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})
   
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )

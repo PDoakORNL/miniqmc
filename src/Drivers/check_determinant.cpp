@@ -267,9 +267,9 @@ void CheckDeterminantTest::setup(int argc, char** argv)
     print_version(verbose);
  
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
   }
 
 int CheckDeterminantTest::run_test()
@@ -398,9 +398,9 @@ int main(int argc, char** argv)
     print_version(verbose);
 
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
 
     double accumulated_error = 0.0;
     double accumulated_error_cpu = 0.0;

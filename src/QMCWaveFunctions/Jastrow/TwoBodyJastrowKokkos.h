@@ -41,12 +41,14 @@ namespace qmcplusplus
  * - double the loop counts
  * - Memory use is O(N).
  */
-template<Devices D, class FT>
-struct TwoBodyJastrow;
-
 template<class FT>
-struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
+struct TwoBodyJastrow<Devices::KOKKOS, FT> : public WaveFunctionComponent
 {
+#ifdef QMC_PARALLEL_JASTROW
+  typedef Kokkos::TeamPolicy<> policy_t;
+#else
+  typedef Kokkos::TeamPolicy<Kokkos::Serial> policy_t;
+#endif
   /// alias FuncType
   using FuncType = FT;
   /// type of each component U, dU, d2U;
@@ -76,17 +78,33 @@ struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
   ///\f$d2Uat[i] = sum_(j) d2u_{i,j}\f$
   Vector<valT> d2Uat;
   valT cur_Uat;
-  aligned_vector<valT> cur_u, cur_du, cur_d2u;
-  aligned_vector<valT> old_u, old_du, old_d2u;
-  aligned_vector<valT> DistCompressed;
-  aligned_vector<int> DistIndice;
+  Kokkos::View<valT*> cur_u, cur_du, cur_d2u;
+  Kokkos::View<valT*> old_u, old_du, old_d2u;
+  Kokkos::View<valT*> DistCompressed;
+  Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  std::vector<FT*> F;
+  typedef Kokkos::Device<
+            Kokkos::DefaultHostExecutionSpace,
+            typename Kokkos::DefaultExecutionSpace::memory_space>
+    F_device_type;
+
+  Kokkos::View<FT*,F_device_type> F;
   /// Uniquue J2 set for cleanup
-  std::map<std::string, FT*> J2Unique;
+//  std::map<std::string, FT*> J2Unique;
+
+  //These are needed because the kokkos class function operator() for
+  //parallel exeuction doesn't really take arguments...  just has
+  //access to class variables.  
+  int iat, igt, jg_hack;
+  const RealType* dist;
+  RealType* u;
+  RealType* du;
+  RealType* d2u;
+  int first[2]; //We have up and down electrons.  This should be generalizd to nspecies.
+  int last[2];
 
   TwoBodyJastrow(ParticleSet& p);
-  TwoBodyJastrow(const TwoBodyJastrow& rhs) = delete;
+  TwoBodyJastrow(const TwoBodyJastrow& rhs) = default;
   ~TwoBodyJastrow();
 
   /* initialize storage */
@@ -121,7 +139,7 @@ struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
     const int igt = P.GroupID[iat] * NumGroups;
     for (int jg = 0; jg < NumGroups; ++jg)
     {
-      const FuncType& f2(*F[igt + jg]);
+      const FuncType& f2(F[igt + jg]);
       int iStart = P.first(jg);
       int iEnd   = P.last(jg);
       curUat += f2.evaluateV(iat, iStart, iEnd, dist, DistCompressed.data());
@@ -136,6 +154,8 @@ struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
                         RealType* restrict du,
                         RealType* restrict d2u,
                         bool triangle = false);
+
+  KOKKOS_INLINE_FUNCTION void operator()(const typename policy_t::member_type& team) const;
 
   /** compute gradient
    */
@@ -157,7 +177,7 @@ struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
 };
 
 template<typename FT>
-TwoBodyJastrow<Devices::CPU, FT>::TwoBodyJastrow(ParticleSet& p)
+TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet& p)
 {
   init(p);
   FirstTime                 = true;
@@ -166,18 +186,18 @@ TwoBodyJastrow<Devices::CPU, FT>::TwoBodyJastrow(ParticleSet& p)
 }
 
 template<typename FT>
-TwoBodyJastrow<Devices::CPU, FT>::~TwoBodyJastrow()
+TwoBodyJastrow<FT>::~TwoBodyJastrow()
 {
-  auto it = J2Unique.begin();
-  while (it != J2Unique.end())
-  {
-    delete ((*it).second);
-    ++it;
-  }
+//  auto it = J2Unique.begin();
+//  while (it != J2Unique.end())
+//  {
+//    delete ((*it).second);
+//    ++it;
+ // }
 } // need to clean up J2Unique
 
 template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::init(ParticleSet& p)
+void TwoBodyJastrow<FT>::init(ParticleSet& p)
 {
   N         = p.getTotalNum();
   N_padded  = getAlignedSize<valT>(N);
@@ -186,19 +206,25 @@ void TwoBodyJastrow<Devices::CPU, FT>::init(ParticleSet& p)
   Uat.resize(N);
   dUat.resize(N);
   d2Uat.resize(N);
-  cur_u.resize(N);
-  cur_du.resize(N);
-  cur_d2u.resize(N);
-  old_u.resize(N);
-  old_du.resize(N);
-  old_d2u.resize(N);
-  F.resize(NumGroups * NumGroups, nullptr);
-  DistCompressed.resize(N);
-  DistIndice.resize(N);
+
+  //And now the Kokkos vectors
+  cur_u   = Kokkos::View<valT*>("cur_u",N);
+  cur_du  = Kokkos::View<valT*>("cur_du",N);
+  cur_d2u = Kokkos::View<valT*>("cur_d2u",N);
+  old_u   = Kokkos::View<valT*>("old_u",N);
+  old_du  = Kokkos::View<valT*>("old_du",N);
+  old_d2u = Kokkos::View<valT*>("old_d2u",N);
+  DistIndice=Kokkos::View<int*>("DistIndice",N);
+  DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
+
+  F = Kokkos::View<FT*,F_device_type>("FT",NumGroups * NumGroups);
+  for(int i=0; i<NumGroups*NumGroups; i++){
+    new(&F(i)) FT();
+  }
 }
 
 template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
+void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (ia == ib)
   {
@@ -207,11 +233,10 @@ void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg, ++ij)
-          if (F[ij] == nullptr)
-            F[ij] = j;
+            F[ij] = *j;
     }
     else
-      F[ia * NumGroups + ib] = j;
+      F[ia * NumGroups + ib] = *j;
   }
   else
   {
@@ -221,18 +246,18 @@ void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg)
-          F[ig * NumGroups + jg] = j;
+          F[ig * NumGroups + jg] = *j;
     }
     else
     {
       // generic case
-      F[ia * NumGroups + ib] = j;
-      F[ib * NumGroups + ia] = j;
+      F[ia * NumGroups + ib] = *j;
+      F[ib * NumGroups + ia] = *j;
     }
   }
   std::stringstream aname;
   aname << ia << ib;
-  J2Unique[aname.str()] = j;
+//  J2Unique[aname.str()] = *j;
   FirstTime             = false;
 }
 
@@ -245,27 +270,35 @@ void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
  * @param d2u starting second deriv
  */
 template<typename FT>
-inline void TwoBodyJastrow<Devices::CPU, FT>::computeU3(const ParticleSet& P,
-                                          int iat,
-                                          const RealType* restrict dist,
-                                          RealType* restrict u,
-                                          RealType* restrict du,
-                                          RealType* restrict d2u,
+inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
+                                          int iat_,
+                                          const RealType* restrict dist_,
+                                          RealType* restrict u_,
+                                          RealType* restrict du_,
+                                          RealType* restrict d2u_,
                                           bool triangle)
 {
+  iat = iat_;
+  dist = dist_;
+  u = u_;
+  du = du_;
+  d2u = d2u_;
+
   const int jelmax = triangle ? iat : N;
   constexpr valT czero(0);
   std::fill_n(u, jelmax, czero);
   std::fill_n(du, jelmax, czero);
   std::fill_n(d2u, jelmax, czero);
 
-  const int igt = P.GroupID[iat] * NumGroups;
+  igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
-    const FuncType& f2(*F[igt + jg]);
-    int iStart = P.first(jg);
-    int iEnd   = std::min(jelmax, P.last(jg));
-    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    const FuncType& f2(F[igt + jg]);
+    jg_hack = jg;
+    first[jg]  = P.first(jg);
+    last[jg]   = std::min(jelmax, P.last(jg));
+   // f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    Kokkos::parallel_for(policy_t(1,1,32),*this);
   }
   // u[iat]=czero;
   // du[iat]=czero;
@@ -273,7 +306,17 @@ inline void TwoBodyJastrow<Devices::CPU, FT>::computeU3(const ParticleSet& P,
 }
 
 template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::ValueType TwoBodyJastrow<Devices::CPU, FT>::ratio(ParticleSet& P, int iat)
+KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename policy_t::member_type& team) const {
+  int jg = jg_hack;
+  int iStart = first[jg];
+  int iEnd = last[jg];
+ // printf("Hi %d %d %d\n",jg,iStart,iEnd);
+  F[igt+jg].evaluateVGL(team,iat,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
+                        DistIndice.data());
+}
+
+template<typename FT>
+typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet& P, int iat)
 {
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
@@ -282,14 +325,14 @@ typename TwoBodyJastrow<Devices::CPU, FT>::ValueType TwoBodyJastrow<Devices::CPU
 }
 
 template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::GradType TwoBodyJastrow<Devices::CPU, FT>::evalGrad(ParticleSet& P, int iat)
+typename TwoBodyJastrow<FT>::GradType TwoBodyJastrow<FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
 template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::ValueType
-TwoBodyJastrow<Devices::CPU, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+typename TwoBodyJastrow<FT>::ValueType
+    TwoBodyJastrow<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
   UpdateMode = ORB_PBYP_PARTIAL;
 
@@ -301,7 +344,7 @@ TwoBodyJastrow<Devices::CPU, FT>::ratioGrad(ParticleSet& P, int iat, GradType& g
 }
 
 template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::acceptMove(ParticleSet& P, int iat)
+void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
 {
   // get the old u, du, d2u
   const DistanceTableData* d_table = P.DistTables[0];
@@ -350,7 +393,7 @@ void TwoBodyJastrow<Devices::CPU, FT>::acceptMove(ParticleSet& P, int iat)
 }
 
 template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::recompute(ParticleSet& P)
+void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
 {
   const DistanceTableData* d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
@@ -397,8 +440,8 @@ void TwoBodyJastrow<Devices::CPU, FT>::recompute(ParticleSet& P)
 }
 
 template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::RealType
-    TwoBodyJastrow<Devices::CPU, FT>::evaluateLog(ParticleSet& P,
+typename TwoBodyJastrow<FT>::RealType
+    TwoBodyJastrow<FT>::evaluateLog(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L)
 {
@@ -407,7 +450,7 @@ typename TwoBodyJastrow<Devices::CPU, FT>::RealType
 }
 
 template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::evaluateGL(ParticleSet& P,
+void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L,
                                     bool fromscratch)
@@ -425,5 +468,6 @@ void TwoBodyJastrow<Devices::CPU, FT>::evaluateGL(ParticleSet& P,
   constexpr valT mhalf(-0.5);
   LogValue = mhalf * LogValue;
 }
+
 } // namespace qmcplusplus
 #endif

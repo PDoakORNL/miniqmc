@@ -26,12 +26,14 @@ namespace qmcplusplus
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template<Devices DT, class FT>
-struct OneBodyJastrow;
-
 template<class FT>
-struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
+struct OneBodyJastrow<Devices::KOKKOS, FT> : public WaveFunctionComponent
 {
+#ifdef QMC_PARALLEL_JASTROW
+  typedef Kokkos::TeamPolicy<> policy_t;
+#else
+  typedef Kokkos::TeamPolicy<Kokkos::Serial> policy_t;
+#endif
   /// alias FuncType
   using FuncType = FT;
   /// type of each component U, dU, d2U;
@@ -57,13 +59,25 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
 
   ///\f$Vat[i] = sum_(j) u_{i,j}\f$
   Vector<valT> Vat;
-  aligned_vector<valT> U, dU, d2U;
-  aligned_vector<valT> DistCompressed;
-  aligned_vector<int> DistIndice;
+  Kokkos::View<valT*> U, dU, d2U;
+  Kokkos::View<valT*> DistCompressed;
+  Kokkos::View<int*> DistIndice;
   Vector<posT> Grad;
   Vector<valT> Lap;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  std::vector<FT*> F;
+  typedef Kokkos::Device<
+            Kokkos::DefaultHostExecutionSpace,
+            typename Kokkos::DefaultExecutionSpace::memory_space>
+       F_device_type;
+  Kokkos::View<FT*,F_device_type> F;
+
+  //Kokkos temporary arrays, a la two body jastrow.
+  int iat, igt, jg_hack;
+  const RealType* dist;
+  int first[2], last[2];
+  RealType*   u;
+  RealType*  du;
+  RealType* d2u;
 
   OneBodyJastrow(const ParticleSet& ions, ParticleSet& els) : Ions(ions)
   {
@@ -72,13 +86,13 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
     WaveFunctionComponentName = "OneBodyJastrow";
   }
 
-  OneBodyJastrow(const OneBodyJastrow& rhs) = delete;
+  OneBodyJastrow(const OneBodyJastrow& rhs) = default;
 
   ~OneBodyJastrow()
   {
-    for (int i = 0; i < F.size(); ++i)
-      if (F[i] != nullptr)
-        delete F[i];
+ //   for (int i = 0; i < F.size(); ++i)
+ //     if (F[i] != nullptr)
+ //       delete F[i];
   }
 
   /* initialize storage */
@@ -86,7 +100,9 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
   {
     Nions     = Ions.getTotalNum();
     NumGroups = Ions.getSpeciesSet().getTotalNum();
-    F.resize(std::max(NumGroups, 4), nullptr);
+    int fsize = std::max(NumGroups,4); //Odd choice.  Why 4?
+                                       //Ignore for now and port.
+                                       
     if (NumGroups > 1 && !Ions.IsGrouped)
     {
       NumGroups = 0;
@@ -96,18 +112,23 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
     Grad.resize(Nelec);
     Lap.resize(Nelec);
 
-    U.resize(Nions);
-    dU.resize(Nions);
-    d2U.resize(Nions);
-    DistCompressed.resize(Nions);
-    DistIndice.resize(Nions);
+    U              = Kokkos::View<valT*>("U",Nions);
+    dU             = Kokkos::View<valT*>("dU",Nions);
+    d2U            = Kokkos::View<valT*>("d2U",Nions);
+    DistCompressed = Kokkos::View<valT*>("DistCompressed",Nions);
+    DistIndice     = Kokkos::View<int*>("DistIndice",Nions);
+
+    F = Kokkos::View<FT*,F_device_type>("FT",std::max(NumGroups,4));
+    for(int i=0; i<fsize; i++){
+      new (&F(i)) FT();
+    }
   }
 
   void addFunc(int source_type, FT* afunc, int target_type = -1)
   {
-    if (F[source_type] != nullptr)
-      delete F[source_type];
-    F[source_type] = afunc;
+    //if (F[source_type] != nullptr)
+    //  delete F[source_type];
+    F[source_type] = *afunc;
   }
 
   void recompute(ParticleSet& P)
@@ -143,8 +164,8 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
     {
       for (int jg = 0; jg < NumGroups; ++jg)
       {
-        if (F[jg] != nullptr)
-          curVat += F[jg]->evaluateV(-1, Ions.first(jg), Ions.last(jg), dist, DistCompressed.data());
+      //  if (F[jg] != nullptr)
+          curVat += F[jg].evaluateV(-1, Ions.first(jg), Ions.last(jg), dist, DistCompressed.data());
       }
     }
     else
@@ -152,8 +173,8 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
       for (int c = 0; c < Nions; ++c)
       {
         int gid = Ions.GroupID[c];
-        if (F[gid] != nullptr)
-          curVat += F[gid]->evaluate(dist[c]);
+     //   if (F[gid] != nullptr)
+          curVat += F[gid].evaluate(dist[c]);
       }
     }
     return curVat;
@@ -203,10 +224,16 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
    * @param dist starting address of the distances of the ions wrt the iat-th
    * particle
    */
-  inline void computeU3(ParticleSet& P, int iat, const valT* dist)
+  inline void computeU3(ParticleSet& P, int iat_, const valT* dist_)
   {
     if (NumGroups > 0)
-    { // ions are grouped
+    { 
+      iat = iat_;
+      dist = dist_;
+      u = U.data();
+      du = dU.data();
+      d2u = d2U.data(); 
+      // ions are grouped
       constexpr valT czero(0);
       std::fill_n(U.data(), Nions, czero);
       std::fill_n(dU.data(), Nions, czero);
@@ -214,9 +241,7 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
 
       for (int jg = 0; jg < NumGroups; ++jg)
       {
-        if (F[jg] == nullptr)
-          continue;
-        F[jg]->evaluateVGL(-1,
+    /*    F[jg].evaluateVGL(-1,
                            Ions.first(jg),
                            Ions.last(jg),
                            dist,
@@ -224,7 +249,11 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
                            dU.data(),
                            d2U.data(),
                            DistCompressed.data(),
-                           DistIndice.data());
+                           DistIndice.data());*/
+         first[jg] = Ions.first(jg);
+         last[jg]  = Ions.last(jg);
+         jg_hack=jg;
+         Kokkos::parallel_for(policy_t(1,1,32),*this);
       }
     }
     else
@@ -232,14 +261,32 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
       for (int c = 0; c < Nions; ++c)
       {
         int gid = Ions.GroupID[c];
-        if (F[gid] != nullptr)
+     //   if (F[gid] != nullptr)
+        if (true)
         {
-          U[c] = F[gid]->evaluate(dist[c], dU[c], d2U[c]);
+          U[c] = F[gid].evaluate(dist[c], dU[c], d2U[c]);
           dU[c] /= dist[c];
         }
       }
     }
   }
+
+  KOKKOS_INLINE_FUNCTION void operator() (const typename policy_t::member_type& team) const{
+    int jg = jg_hack;
+    int iStart = first[jg];
+    int iEnd   = last[jg];
+    F[jg].evaluateVGL(team,
+                      -1,
+                      iStart,
+                      iEnd,
+                      dist,
+                      u,
+                      du,
+                      d2u,
+                      DistCompressed.data(),
+                      DistIndice.data());
+
+  } 
 
   /** compute the gradient during particle-by-particle update
    * @param P quantum particleset
@@ -279,10 +326,6 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
     Lap[iat]  = curLap;
   }
 };
-
-#ifdef QMC_USE_KOKKOS
-#include "QMCWaveFunctions/Jastrow/OneBodyJastrowKokkos.h"
-#endif
 
 } // namespace qmcplusplus
 #endif

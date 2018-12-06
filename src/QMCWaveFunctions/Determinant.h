@@ -16,11 +16,11 @@
  * @brief Determinant piece of the wave function
  */
 
-#ifndef QMCPLUSPLUS_FUTURE_DETERMINANT_H
-#define QMCPLUSPLUS_FUTURE_DETERMINANT_H
+#ifndef QMCPLUSPLUS_DETERMINANT_H
+#define QMCPLUSPLUS_DETERMINANT_H
 
 #include "clean_inlining.h"
-#include <impl/Kokkos_Timer.hpp>
+//#include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>

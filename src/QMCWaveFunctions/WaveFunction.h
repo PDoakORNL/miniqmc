@@ -27,14 +27,24 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
+#include "QMCWaveFunctions/WaveFunctionBuilder.h"
 
 namespace qmcplusplus
 {
 /** A minimal TrialWavefunction
  */
 
+enum WaveFunctionTimers
+  {
+    Timer_Det,
+    Timer_GL,
+  };
+ 
 class WaveFunction
 {
+  TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames;
+  
+public:
   using RealType = OHMMS_PRECISION;
   using valT     = OHMMS_PRECISION;
   using posT     = TinyVector<valT, OHMMS_DIM>;
@@ -110,20 +120,15 @@ public:
       extract_dn_list(const std::vector<WaveFunction*>& WF_list);
   friend const std::vector<WaveFunctionComponent*>
       extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
-};
 
-void build_WaveFunction(bool useRef,
-                        WaveFunction& WF,
-                        ParticleSet& ions,
-                        ParticleSet& els,
-                        const RandomGenerator<QMCTraits::RealType>& RNG,
-                        bool enableJ3);
+  friend WaveFunctionBuilder<Devices::CPU>;
+};
 
 const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);
 const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list);
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
-
+  
 } // namespace qmcplusplus
 
 #endif

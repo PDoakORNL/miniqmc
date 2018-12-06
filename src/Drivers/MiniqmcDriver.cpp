@@ -23,7 +23,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
   if (!comm->root())
   {
-    outputManager.shutOff();
+    OutputManagerClass::get().shutOff();
   }
 
   int number_of_electrons = 0;
@@ -31,26 +31,26 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   Tensor<int, 3> tmat(mq_opt_.na, 0, 0, 0, mq_opt_.nb, 0, 0, 0, mq_opt_.nc);
 
   timer_levels timer_level = timer_level_fine;
-  if (mq_opt_.timer_level_name == "coarse")
-  {
-    timer_level = timer_level_coarse;
-  }
-  else if (mq_opt_.timer_level_name != "fine")
-  {
-    app_error() << "Timer level should be 'coarse' or 'fine', name given: "
-                << mq_opt_.timer_level_name << '\n';
-    return; //should throw
-  }
-
-  TimerManager.set_timer_threshold(timer_level);
+  // if (mq_opt_.timer_level_name == "coarse")
+  // {
+  //   timer_level = timer_level_coarse;
+  // }
+  // else if (mq_opt_.timer_level_name != "fine")
+  // {
+  //   app_error() << "Timer level should be 'coarse' or 'fine', name given: "
+  //               << mq_opt_.timer_level_name << '\n';
+  //   return; //should throw
+  // }
+  
+  TimerManagerClass::get().set_timer_threshold(timer_level);
   setup_timers(mq_opt_.Timers, mq_opt_.MiniQMCTimerNames, timer_level_coarse);
 
   if (comm->root())
   {
     if (mq_opt_.verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
   }
 
   print_version(mq_opt_.verbose);
@@ -98,7 +98,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << '\n'
                   << "reference implementation " << '\n';
 
-  mq_opt_.Timers[mq_opt_.Timer_Total]->start();
+  mq_opt_.Timers[Timer_Total]->start();
 
 
   //Now lets figure out what threading sizes are needed:
@@ -126,8 +126,8 @@ void MiniqmcDriver::run()
 // 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>)
 // 				   );
 
-  BOOST_HANA_CHECK(hana::size_c<hana::int_c<3>> == hana::length(device_tuple));
-  BOOST_HANA_CHECK(hana::size_c<hana::int_c<2>> == hana::size_c<static_cast<size_t>(Devices::LAST)>);
+  //BOOST_HANA_CHECK(hana::size_c<hana::int_c<3>> == hana::length(device_tuple));
+  //BOOST_HANA_CHECK(hana::size_c<hana::int_c<2>> == hana::size_c<static_cast<size_t>(Devices::LAST)>);
   //BOOST_HANA_CHECK((hana::size_c<static_cast<size_t>(Devices::LAST)> == hana::length(device_tuple));
   
   //static_assert(device_map[hana::int_c<0>] == hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,"");

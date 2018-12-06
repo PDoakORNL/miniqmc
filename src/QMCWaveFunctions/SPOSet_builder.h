@@ -34,14 +34,14 @@ public:
     {
   if (useRef)
   {
-    auto* spo_main = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
+    miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>* spo_main = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
     spo_main->set(nx, ny, nz, num_splines, nblocks);
     spo_main->Lattice.set(lattice_b);
     return dynamic_cast<SPOSet*>(spo_main);
   }
   else
   {
-    auto* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
+    EinsplineSPO<DT, OHMMS_PRECISION>* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
     spo_main->set(nx, ny, nz, num_splines, nblocks);
     spo_main->setLattice(lattice_b);
     return dynamic_cast<SPOSet*>(spo_main);

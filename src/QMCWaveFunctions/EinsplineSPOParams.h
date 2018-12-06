@@ -26,23 +26,23 @@ template<typename T>
 struct EinsplineSPOParams
 {
   /// number of blocks
-  int nBlocks = 0;
+  int nBlocks;
   /// first logical block index
-  int firstBlock = 0;
+  int firstBlock;
   /// last logical block index
-  int lastBlock = 0;
+  int lastBlock;
   /// number of splines
-  int nSplines = 0;
+  int nSplines;
   /// number of splines per block
-  int nSplinesPerBlock = 0;
-  int nSplinesSerialThreshold_V = 0;
-  int nSplinesSerialThreshold_VGH = 0;
+  int nSplinesPerBlock;
+  int nSplinesSerialThreshold_V;
+  int nSplinesSerialThreshold_VGH;
   
 
   /// if true, responsible for cleaning up einsplines
-  bool Owner = false;
+  bool Owner;
   /// if true, is copy.  For reference counting & clean up in Kokkos.
-  bool is_copy = false;
+  bool is_copy;
 
   CrystalLattice<T, 3> lattice;
 };

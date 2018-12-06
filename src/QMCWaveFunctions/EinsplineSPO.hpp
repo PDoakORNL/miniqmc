@@ -53,10 +53,11 @@ public:
   /// default constructor
   EinsplineSPO()
   {
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
+    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
+  
   /// disable copy constructor
-  EinsplineSPO(const EinsplineSPO& in) = default;
+  EinsplineSPO(const EinsplineSPO& in) = delete;
   /// disable copy operator
   EinsplineSPO& operator=(const EinsplineSPO& in) = delete;
 
@@ -70,14 +71,14 @@ public:
   EinsplineSPO(const EinsplineSPO& in, int team_size, int member_id)
     : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
-    
     // einsplines.resize(nBlocks);
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
+    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 
   /// destructors
   ~EinsplineSPO()
   {
+    
     //Note the change in garbage collection here.  The reason for doing this is that by
     //changing einsplines to a view, it's more natural to work by reference than by raw pointer.
     // To maintain current interface, redoing the input types of allocate and destroy to call by references
@@ -85,7 +86,6 @@ public:
     // However, since we've converted the large chunks of memory to views, garbage collection is
     // handled automatically.  Thus, setting the spline_type objects to empty views lets Kokkos handle the Garbage collection.
 
-    
     //    for (int i = 0; i < nBlocks; ++i)
     //      myAllocator.destroy(einsplines(i));
   }
@@ -152,8 +152,9 @@ public:
     return einspline_spo_device.getHess(ib, n, m);
   }
 
+  EinsplineSPODeviceImp<DT, T> einspline_spo_device;
 private:
-  EinsplineSPODevice<EinsplineSPODeviceImp<DT, T>, T> einspline_spo_device;
+  
 };
 
 // template<Devices DT, typename T>

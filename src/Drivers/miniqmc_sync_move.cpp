@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 
   if (!comm.root())
   {
-    outputManager.shutOff();
+    OutputManagerClass::get().shutOff();
   }
 
   int opt;
@@ -309,9 +309,9 @@ int main(int argc, char** argv)
   if (comm.root())
   {
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
   }
 
   print_version(verbose);

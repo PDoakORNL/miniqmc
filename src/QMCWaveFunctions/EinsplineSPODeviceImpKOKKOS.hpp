@@ -69,7 +69,7 @@ class EinsplineSPODeviceImp<Devices::KOKKOS, T>
   using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
   using lattice_type    = CrystalLattice<T, 3>;
 
-  using einspline_type = spline_type*;
+  //using einspline_type = spline_type*;
   Kokkos::View<spline_type*> einsplines;
   Kokkos::View<vContainer_type*> psi;
   Kokkos::View<gContainer_type*> grad;
@@ -112,7 +112,7 @@ public:
     einsplines                  = Kokkos::View<spline_type*>("einsplines", esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       //KOKKOS people take note, is this ok?
-      einsplines(i)= *static_cast<einspline_type>(in.getEinspline(t));
+      einsplines(i)= *static_cast<spline_type*>(in.getEinspline(t));
     resize();
   }
 
@@ -171,8 +171,8 @@ public:
       QMCT::PosType start(0);
       QMCT::PosType end(1);
 
-      //    einsplines.resize(nBlocks);
-      einsplines = Kokkos::View<spline_type*>("einsplines", nblocks);
+      Kokkos::resize(einsplines, esp.nBlocks);
+      einsplines = Kokkos::View<spline_type*>("einsplines", esp.nBlocks);
 
       RandomGenerator<T> myrandom(11);
       //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
@@ -226,16 +226,17 @@ public:
 
   void evaluate_vgl(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-      for (int i = 0; i < esp.nBlocks; ++i)
-        compute_engine.evaluate_vgl(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-				    esp.nSplinesPerBlock);
+    //This didn't appear to be actually implemented for Kokkos
+    // auto u = esp.lattice.toUnit_floor(p);
+    //   for (int i = 0; i < esp.nBlocks; ++i)
+    //     compute_engine.evaluate_vgl(&einsplines(i),
+    //                               u[0],
+    //                               u[1],
+    //                               u[2],
+    //                               psi(i).data(),
+    //                               grad(i).data(),
+    //                               hess(i).data(),
+    // 				    esp.nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess */

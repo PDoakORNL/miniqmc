@@ -25,9 +25,32 @@
 
 namespace qmcplusplus
 {
+  enum MiniQMCTimers
+  {
+    Timer_Total,
+    Timer_Init,
+    Timer_Diffusion,
+    Timer_ECP,
+    Timer_Value,
+    Timer_evalGrad,
+    Timer_ratioGrad,
+    Timer_Update,
+  };
+
 class MiniqmcOptions
 {
 public:
+  TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames{
+      {Timer_Total, "Total"},
+      {Timer_Init, "Initialization"},
+      {Timer_Diffusion, "Diffusion"},
+      {Timer_ECP, "Pseudopotential"},
+      {Timer_Value, "Value"},
+      {Timer_evalGrad, "Current Gradient"},
+      {Timer_ratioGrad, "New Gradient"},
+      {Timer_Update, "Update"},
+  };
+
   static void print_help()
   {
     app_summary() << "usage:" << '\n';
@@ -59,31 +82,7 @@ public:
       app_summary() << "                         " << x << ".  " << enum_name << '\n';
     });
   }
-  enum MiniQMCTimers
-  {
-    Timer_Total,
-    Timer_Init,
-    Timer_Diffusion,
-    Timer_ECP,
-    Timer_Value,
-    Timer_evalGrad,
-    Timer_ratioGrad,
-    Timer_Update,
-  };
 
-  TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
-      {Timer_Total, "Total"},
-      {Timer_Init, "Initialization"},
-      {Timer_Diffusion, "Diffusion"},
-      {Timer_ECP, "Pseudopotential"},
-      {Timer_Value, "Value"},
-      {Timer_evalGrad, "Current Gradient"},
-      {Timer_ratioGrad, "New Gradient"},
-      {Timer_Update, "Update"},
-  };
-
-  MiniqmcOptions() = default;
-  MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }
   using QMCT        = QMCTraits;
   Devices device    = Devices::CPU;
   int device_number = 0;
@@ -107,6 +106,10 @@ public:
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;
+  
+  MiniqmcOptions() = default;
+  MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }
+
 };
 
 MiniqmcOptions readOptions(int argc, char** argv);
