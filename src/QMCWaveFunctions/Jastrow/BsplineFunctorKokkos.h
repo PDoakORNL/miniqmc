@@ -34,14 +34,13 @@
 #include "Utilities/SIMD/allocator.hpp"
 #include "Numerics/OhmmsPETE/TinyVector.h"
 #include <cstdio>
-
+#include "QMCWaveFunctions/Jastrow/BsplineFunctor.h"
 /*!
  * @file
  */
 
 namespace qmcplusplus
 {
-
 template<class T>
 struct BsplineFunctor<Devices::KOKKOS, T> : public OptimizableFunctorBase
 {
@@ -224,11 +223,11 @@ struct BsplineFunctor<Devices::KOKKOS, T> : public OptimizableFunctorBase
 };
 
 template<typename T>
-inline T BsplineFunctor<T>::evaluateV(const int iat,
-                                      const int iStart,
-                                      const int iEnd,
-                                      const T* restrict _distArray,
-                                      T* restrict distArrayCompressed) const
+inline T BsplineFunctor<Devices::KOKKOS, T>::evaluateV(const int iat,
+                                                       const int iStart,
+                                                       const int iEnd,
+                                                       const T* restrict _distArray,
+                                                       T* restrict distArrayCompressed) const
 {
   const real_type* restrict distArray = _distArray + iStart;
 
@@ -268,16 +267,17 @@ inline T BsplineFunctor<T>::evaluateV(const int iat,
 
 template<typename T>
 template<typename TeamType>
-KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
-                                                           const int iat,
-                                                           const int iStart,
-                                                           const int iEnd,
-                                                           const T* _distArray,
-                                                           T* restrict _valArray,
-                                                           T* restrict _gradArray,
-                                                           T* restrict _laplArray,
-                                                           T* restrict distArrayCompressed,
-                                                           int* restrict distIndices) const
+KOKKOS_INLINE_FUNCTION void
+    BsplineFunctor<Devices::KOKKOS, T>::evaluateVGL(const TeamType& team,
+                                                    const int iat,
+                                                    const int iStart,
+                                                    const int iEnd,
+                                                    const T* _distArray,
+                                                    T* restrict _valArray,
+                                                    T* restrict _gradArray,
+                                                    T* restrict _laplArray,
+                                                    T* restrict distArrayCompressed,
+                                                    int* restrict distIndices) const
 {
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
   constexpr real_type cOne(1);
@@ -351,4 +351,7 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
     // clang-format on
   });
 }
-}
+
+} // namespace qmcplusplus
+
+#endif

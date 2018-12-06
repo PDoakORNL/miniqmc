@@ -57,6 +57,9 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
   int nTiles = 1;
 
+  mq_opt_.Timers[Timer_Total]->start();
+  mq_opt_.Timers[Timer_Init]->start();
+
   // initialize ions and splines which are shared by all threads later
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
@@ -98,8 +101,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << '\n'
                   << "reference implementation " << '\n';
 
-  mq_opt_.Timers[Timer_Total]->start();
-
+  mq_opt_.Timers[Timer_Init]->stop();
 
   //Now lets figure out what threading sizes are needed:
   //  For walker level parallelism:

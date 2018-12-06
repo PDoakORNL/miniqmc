@@ -9,8 +9,8 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#ifndef QMCPLUSPLUS_ONEBODYJASTROW_H
-#define QMCPLUSPLUS_ONEBODYJASTROW_H
+#ifndef QMCPLUSPLUS_ONEBODYJASTROW_KOKKOS_H
+#define QMCPLUSPLUS_ONEBODYJASTROW_KOKKOS_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include <Utilities/SIMD/allocator.hpp>

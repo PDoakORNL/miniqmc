@@ -41,7 +41,6 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   //Since we've merged initialization and execution, we get rid of the
   // mover_list vector.
   const int teamID = ip;
-  mq_opt.Timers[mq_opt.Timer_Init]->start();
   // create and initialize movers
   Mover thiswalker(myPrimes[teamID], ions);
   // create a spo view in each Mover
@@ -50,7 +49,7 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   // create wavefunction per mover
   // This updates ions
   // build_WaveFunction is not thread safe!
-  build_WaveFunction(mq_opt.useRef,
+  WaveFunctionBuilder<DT>::build(mq_opt.useRef,
                      thiswalker.wavefunction,
                      ions,
                      thiswalker.els,
@@ -60,8 +59,7 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   // initial computing
   thiswalker.els.update();
   thiswalker.wavefunction.evaluateLog(thiswalker.els);
-  mq_opt.Timers[mq_opt.Timer_Init]->stop();
-
+  
   auto& els          = thiswalker.els;
   auto& spo          = *thiswalker.spo;
   auto& random_th    = thiswalker.rng;
@@ -76,7 +74,7 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   int my_accepted = 0;
   for (int mc = 0; mc < mq_opt.nsteps; ++mc)
   {
-    mq_opt.Timers[mq_opt.Timer_Diffusion]->start();
+    mq_opt.Timers[Timer_Diffusion]->start();
     for (int l = 0; l < mq_opt.nsubsteps; ++l) // drift-and-diffusion
     {
       random_th.generate_uniform(ur.data(), nels);
@@ -86,9 +84,9 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
         // Operate on electron with index iel
         els.setActive(iel);
         // Compute gradient at the current position
-        mq_opt.Timers[mq_opt.Timer_evalGrad]->start();
+        mq_opt.Timers[Timer_evalGrad]->start();
         ParticleSet::PosType grad_now = wavefunction.evalGrad(els, iel);
-        mq_opt.Timers[mq_opt.Timer_evalGrad]->stop();
+        mq_opt.Timers[Timer_evalGrad]->stop();
 
         // Construct trial move
         ParticleSet::PosType dr = sqrttau * delta[iel];
@@ -98,22 +96,22 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
           continue;
 
         // Compute gradient at the trial position
-        mq_opt.Timers[mq_opt.Timer_ratioGrad]->start();
+        mq_opt.Timers[Timer_ratioGrad]->start();
 
         ParticleSet::PosType grad_new;
         wavefunction.ratioGrad(els, iel, grad_new);
 
         spo.evaluate_vgh(els.R[iel]);
 
-        mq_opt.Timers[mq_opt.Timer_ratioGrad]->stop();
+        mq_opt.Timers[Timer_ratioGrad]->stop();
 
         // Accept/reject the trial move
         if (ur[iel] > accept) // MC
         {
           // Update position, and update temporary storage
-          mq_opt.Timers[mq_opt.Timer_Update]->start();
+          mq_opt.Timers[Timer_Update]->start();
           wavefunction.acceptMove(els, iel);
-          mq_opt.Timers[mq_opt.Timer_Update]->stop();
+          mq_opt.Timers[Timer_Update]->stop();
           els.acceptMove(iel);
           my_accepted++;
         }
@@ -130,14 +128,14 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
     // evaluate Kinetic Energy
     wavefunction.evaluateGL(els);
 
-    mq_opt.Timers[mq_opt.Timer_Diffusion]->stop();
+    mq_opt.Timers[Timer_Diffusion]->stop();
 
     // Compute NLPP energy using integral over spherical points
 
     ecp.randomize(rOnSphere); // pick random sphere
     const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
 
-    mq_opt.Timers[mq_opt.Timer_ECP]->start();
+    mq_opt.Timers[Timer_ECP]->start();
     for (int jel = 0; jel < els.getTotalNum(); ++jel)
     {
       const auto& dist  = d_ie->Distances[jel];
@@ -150,15 +148,15 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
 
             els.makeMoveOnSphere(jel, deltar);
 
-            mq_opt.Timers[mq_opt.Timer_Value]->start();
+            mq_opt.Timers[Timer_Value]->start();
             spo.evaluate_v(els.R[jel]);
             wavefunction.ratio(els, jel);
-            mq_opt.Timers[mq_opt.Timer_Value]->stop();
+            mq_opt.Timers[Timer_Value]->stop();
 
             els.rejectMove(jel);
           }
     }
-    mq_opt.Timers[mq_opt.Timer_ECP]->stop();
+    mq_opt.Timers[Timer_ECP]->stop();
 
   } // nsteps
 }

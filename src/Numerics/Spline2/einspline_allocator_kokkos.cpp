@@ -16,7 +16,7 @@
 #include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
 
 template<>
-void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>* restrict spline,
+void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
 						int Nx,
 						int Ny,
 						int Nz,
@@ -44,7 +44,7 @@ void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOK
 }
 
 template<>
-void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>* restrict spline,
+void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
 						int Nx,
 						int Ny,
 						int Nz,

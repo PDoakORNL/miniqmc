@@ -157,18 +157,6 @@ void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
   } // nsteps
 }
 
-
-template<Devices DT>
-void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
-                                             MiniqmcOptions& mq_opt,
-                                             const int norb,
-                                             const int nTiles,
-                                             const Tensor<OHMMS_PRECISION, 3>& lattice_b)
-{
-  spo_set =
-      SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, lattice_b);
-}
-
 template<Devices DT>
 void MiniqmcDriverFunctions<DT>::runThreads(MiniqmcOptions& mq_opt,
                                             const PrimeNumberSet<uint32_t>& myPrimes,

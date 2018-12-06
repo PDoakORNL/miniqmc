@@ -35,27 +35,27 @@
 
 namespace qmcplusplus
 {
-template <Devices DT, typename T>
+template<Devices DT, typename T>
 class EinsplineSPO : public SPOSetImp<DT>
 {
 public:
-
   // Global Type Aliases
-  using QMCT = QMCTraits;
-  using PosType = QMCT::PosType;
-  using lattice_type    = CrystalLattice<T, 3>;
+  using QMCT         = QMCTraits;
+  using PosType      = QMCT::PosType;
+  using lattice_type = CrystalLattice<T, 3>;
   // Base SPOSetImp
   using BaseSPO = SPOSetImp<DT>;
-  
+
   /// Timer
   NewTimer* timer;
 
   /// default constructor
   EinsplineSPO()
   {
+    std::cout << "EinsplineSPO() called\n";
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
-  
+
   /// disable copy constructor
   EinsplineSPO(const EinsplineSPO& in) = delete;
   /// disable copy operator
@@ -69,8 +69,9 @@ public:
    * Create a view of the big object. A simple blocking & padding  method.
    */
   EinsplineSPO(const EinsplineSPO& in, int team_size, int member_id)
-    : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
+      : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
+    std::cout << "EinsplineSPO Fat Copy called\n";
     // einsplines.resize(nBlocks);
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -78,7 +79,6 @@ public:
   /// destructors
   ~EinsplineSPO()
   {
-    
     //Note the change in garbage collection here.  The reason for doing this is that by
     //changing einsplines to a view, it's more natural to work by reference than by raw pointer.
     // To maintain current interface, redoing the input types of allocate and destroy to call by references
@@ -100,61 +100,43 @@ public:
   /** evaluate psi */
   inline void evaluate_v(const PosType& p)
   {
+    ScopedTimer local_timer(timer);
     einspline_spo_device.evaluate_v(p);
   }
 
   /** evaluate psi probably for synced walker */
-  inline void evaluate_v_pfor(const PosType& p)
-  {
-    einspline_spo_device.evaluate_v_pfor(p);
-  }
+  inline void evaluate_v_pfor(const PosType& p) { einspline_spo_device.evaluate_v_pfor(p); }
 
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl(const PosType& p)
   {
+    ScopedTimer local_timer(timer);
     einspline_spo_device.evaluate_vgl(p);
   }
 
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const PosType& p)
   {
+    ScopedTimer local_timer(timer);
     einspline_spo_device.evaluate_vgh(p);
   }
 
-  void print(std::ostream& os)
-  {
-    os << einspline_spo_device;
-  }
+  void print(std::ostream& os) { os << einspline_spo_device; }
 
-  void setLattice(const Tensor<T, 3>& lattice)
-  {
-    einspline_spo_device.setLattice(lattice);
-  }
+  void setLattice(const Tensor<T, 3>& lattice) { einspline_spo_device.setLattice(lattice); }
 
-  const EinsplineSPOParams<T>& getParams()
-  {
-    return einspline_spo_device.getParams();
-  }
+  const EinsplineSPOParams<T>& getParams() { return einspline_spo_device.getParams(); }
 
   ///Access to elements in psi
-  T getPsi(int ib, int n)
-  {
-    return einspline_spo_device.getPsi(ib, n);
-  }
+  T getPsi(int ib, int n) { return einspline_spo_device.getPsi(ib, n); }
 
-  T getGrad(int ib, int n, int m)
-  {
-    return einspline_spo_device.getGrad(ib, n, m);
-  }
+  T getGrad(int ib, int n, int m) { return einspline_spo_device.getGrad(ib, n, m); }
 
-  T getHess(int ib, int n, int m)
-  {
-    return einspline_spo_device.getHess(ib, n, m);
-  }
+  T getHess(int ib, int n, int m) { return einspline_spo_device.getHess(ib, n, m); }
 
   EinsplineSPODeviceImp<DT, T> einspline_spo_device;
+
 private:
-  
 };
 
 // template<Devices DT, typename T>
@@ -168,7 +150,7 @@ private:
 //     operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
 // {
 // }
-  
+
 // template<typename T>
 // KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
 // operator()(const typename EvaluateVTag&,

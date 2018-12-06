@@ -2,17 +2,19 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2017 QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
-// File developed by: M. Graham Lopez
+// File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 //
-// File created by: M. Graham Lopez
+// File created by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 
 /**
- * @file Determinant.h
- * @brief Determinant piece of the wave function
+ * @file
+ * @brief CPU implementation of Determinant
  */
 
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H

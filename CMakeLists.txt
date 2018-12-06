@@ -572,5 +572,9 @@ endif()
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/qmcpack.settings ${qmcpack_BINARY_DIR}/bin/qmcpack.settings)
 
+# With ninja this allows you to see individual file build times
+# set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+
+
 SUBDIRS(src)
 

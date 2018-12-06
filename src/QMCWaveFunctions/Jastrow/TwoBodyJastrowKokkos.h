@@ -177,7 +177,7 @@ struct TwoBodyJastrow<Devices::KOKKOS, FT> : public WaveFunctionComponent
 };
 
 template<typename FT>
-TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet& p)
+TwoBodyJastrow<Devices::KOKKOS, FT>::TwoBodyJastrow(ParticleSet& p)
 {
   init(p);
   FirstTime                 = true;
@@ -186,7 +186,7 @@ TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet& p)
 }
 
 template<typename FT>
-TwoBodyJastrow<FT>::~TwoBodyJastrow()
+TwoBodyJastrow<Devices::KOKKOS, FT>::~TwoBodyJastrow()
 {
 //  auto it = J2Unique.begin();
 //  while (it != J2Unique.end())
@@ -197,7 +197,7 @@ TwoBodyJastrow<FT>::~TwoBodyJastrow()
 } // need to clean up J2Unique
 
 template<typename FT>
-void TwoBodyJastrow<FT>::init(ParticleSet& p)
+void TwoBodyJastrow<Devices::KOKKOS, FT>::init(ParticleSet& p)
 {
   N         = p.getTotalNum();
   N_padded  = getAlignedSize<valT>(N);
@@ -224,7 +224,7 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
+void TwoBodyJastrow<Devices::KOKKOS, FT>::addFunc(int ia, int ib, FT* j)
 {
   if (ia == ib)
   {
@@ -270,7 +270,7 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
  * @param d2u starting second deriv
  */
 template<typename FT>
-inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
+inline void TwoBodyJastrow<Devices::KOKKOS, FT>::computeU3(const ParticleSet& P,
                                           int iat_,
                                           const RealType* restrict dist_,
                                           RealType* restrict u_,
@@ -306,7 +306,7 @@ inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
 }
 
 template<typename FT>
-KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename policy_t::member_type& team) const {
+KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<Devices::KOKKOS, FT>::operator() (const typename policy_t::member_type& team) const {
   int jg = jg_hack;
   int iStart = first[jg];
   int iEnd = last[jg];
@@ -316,7 +316,7 @@ KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename polic
 }
 
 template<typename FT>
-typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet& P, int iat)
+typename TwoBodyJastrow<Devices::KOKKOS, FT>::ValueType TwoBodyJastrow<Devices::KOKKOS, FT>::ratio(ParticleSet& P, int iat)
 {
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
@@ -325,14 +325,14 @@ typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet& P,
 }
 
 template<typename FT>
-typename TwoBodyJastrow<FT>::GradType TwoBodyJastrow<FT>::evalGrad(ParticleSet& P, int iat)
+typename TwoBodyJastrow<Devices::KOKKOS, FT>::GradType TwoBodyJastrow<Devices::KOKKOS, FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
 template<typename FT>
-typename TwoBodyJastrow<FT>::ValueType
-    TwoBodyJastrow<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+typename TwoBodyJastrow<Devices::KOKKOS, FT>::ValueType
+    TwoBodyJastrow<Devices::KOKKOS, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
   UpdateMode = ORB_PBYP_PARTIAL;
 
@@ -344,7 +344,7 @@ typename TwoBodyJastrow<FT>::ValueType
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
+void TwoBodyJastrow<Devices::KOKKOS, FT>::acceptMove(ParticleSet& P, int iat)
 {
   // get the old u, du, d2u
   const DistanceTableData* d_table = P.DistTables[0];
@@ -393,7 +393,7 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
+void TwoBodyJastrow<Devices::KOKKOS, FT>::recompute(ParticleSet& P)
 {
   const DistanceTableData* d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
@@ -440,8 +440,8 @@ void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
 }
 
 template<typename FT>
-typename TwoBodyJastrow<FT>::RealType
-    TwoBodyJastrow<FT>::evaluateLog(ParticleSet& P,
+typename TwoBodyJastrow<Devices::KOKKOS, FT>::RealType
+    TwoBodyJastrow<Devices::KOKKOS, FT>::evaluateLog(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L)
 {
@@ -450,7 +450,7 @@ typename TwoBodyJastrow<FT>::RealType
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
+void TwoBodyJastrow<Devices::KOKKOS, FT>::evaluateGL(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L,
                                     bool fromscratch)

@@ -11,8 +11,8 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#ifndef QMCPLUSPLUS_TWOBODYJASTROW_H
-#define QMCPLUSPLUS_TWOBODYJASTROW_H
+#ifndef QMCPLUSPLUS_TWOBODYJASTROW_KOKKOS_H
+#define QMCPLUSPLUS_TWOBODYJASTROW_KOKKOS_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Particle/DistanceTableData.h"
@@ -426,4 +426,9 @@ void TwoBodyJastrow<Devices::CPU, FT>::evaluateGL(ParticleSet& P,
   LogValue = mhalf * LogValue;
 }
 } // namespace qmcplusplus
+
+#ifdef QMC_USE_KOKKOS
+#include "QMCWaveFunctions/Jastrow/TwoBodyJastrowKokkos.h"
+#endif
+
 #endif

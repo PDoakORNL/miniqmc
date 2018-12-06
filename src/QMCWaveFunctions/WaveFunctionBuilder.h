@@ -21,6 +21,9 @@ static void build(bool useRef,
 };
 
 extern template class WaveFunctionBuilder<Devices::CPU>;
+#ifdef QMC_USE_KOKKOS
+extern template class WaveFunctionBuilder<Devices::KOKKOS>;
+  #endif
 }
 
 #endif

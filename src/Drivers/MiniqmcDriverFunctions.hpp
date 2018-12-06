@@ -64,6 +64,16 @@ private:
   static void updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device);
 };
 
+template<Devices DT>
+void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
+                                             MiniqmcOptions& mq_opt,
+                                             const int norb,
+                                             const int nTiles,
+                                             const Tensor<OHMMS_PRECISION, 3>& lattice_b)
+{
+  spo_set =
+      SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, lattice_b);
+}
 
 // template<Devices DT>
 // void MiniqmcDriverFunctions<DT>::mover_info()
@@ -85,20 +95,20 @@ private:
 // 					      hana::type_c<initializeKOKKOS>));
 
 
-static constexpr auto device_map =
-    hana::apply(hana::make_map,
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
-				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
-#ifdef QMC_USE_KOKKOS
-		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
-#endif
-#ifdef QMC_USE_OMPOL
-                hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
-                                hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
-#endif
-                hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
-                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>));
+// static constexpr auto device_map =
+//     hana::apply(hana::make_map,
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
+// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
+// #ifdef QMC_USE_KOKKOS
+// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
+//                                 hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
+// #endif
+// #ifdef QMC_USE_OMPOL
+//                 hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
+//                                 hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
+// #endif
+//                 hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
+//                                 hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>));
 
 
 } // namespace qmcplusplus

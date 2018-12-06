@@ -116,5 +116,7 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
 }
 
 template class WaveFunctionBuilder<Devices::CPU>;
-  
+#ifdef QMC_USE_KOKKOS
+template class WaveFunctionBuilder<Devices::KOKKOS>;
+#endif
 } // namespace qmcplusplus

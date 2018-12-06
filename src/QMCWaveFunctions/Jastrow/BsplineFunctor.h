@@ -344,8 +344,9 @@ inline void BsplineFunctor<Devices::CPU, T>::evaluateVGL(const int iat,
   }
 }
 
+} // namespace qmcplusplus
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/Jastrow/BsplineFunctorKokkos.h"
 #endif
-} // namespace qmcplusplus
+
 #endif

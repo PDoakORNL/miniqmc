@@ -49,7 +49,7 @@ public:
   using valT     = OHMMS_PRECISION;
   using posT     = TinyVector<valT, OHMMS_DIM>;
 
-private:
+protected:
   std::vector<WaveFunctionComponent*> Jastrows;
   WaveFunctionComponent* Det_up;
   WaveFunctionComponent* Det_dn;
@@ -121,7 +121,8 @@ public:
   friend const std::vector<WaveFunctionComponent*>
       extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
-  friend WaveFunctionBuilder<Devices::CPU>;
+  template<Devices D>
+  friend class WaveFunctionBuilder;
 };
 
 const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);

@@ -125,7 +125,7 @@ void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>*& restrict spli
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  einspline_create_multi_UBspline_3d_s_coefs(spline, Nx, Ny, Nz, N);
+  einspline_create_multi_UBspline_3d_s_coefs<D>(spline, Nx, Ny, Nz, N);
 
   if (!spline->coefs)
   {
@@ -196,7 +196,7 @@ void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>*& spline, Ugrid
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  einspline_create_multi_UBspline_3d_d_coefs(spline, Nx, Ny, Nz, N);
+  einspline_create_multi_UBspline_3d_d_coefs<D>(spline, Nx, Ny, Nz, N);
 
   if (!spline->coefs)
   {
@@ -253,7 +253,7 @@ void einspline_create_UBspline_3d_d(UBspline_3d_d<D>*& spline, Ugrid x_grid, Ugr
   spline->y_stride = Nz;
 
   spline->coefs_size = (size_t)Nx * (size_t)Ny * (size_t)Nz;
-  einspline_create_UBspline_3d_d_coefs(spline, Nx, Ny, Nz);
+  einspline_create_UBspline_3d_d_coefs<D>(spline, Nx, Ny, Nz);
 }
 
 template<Devices D>
@@ -301,7 +301,7 @@ void einspline_create_UBspline_3d_s(UBspline_3d_s<D>*& spline, Ugrid x_grid, Ugr
   spline->y_stride = Nz;
 
   spline->coefs_size = (size_t)Nx * (size_t)Ny * (size_t)Nz;
-  einspline_create_UBspline_3d_s_coefs(spline, Nx, Ny, Nz);
+  einspline_create_UBspline_3d_s_coefs<D>(spline, Nx, Ny, Nz);
 }
 
 // This is necessary boilerplate to avoid unecessary multiple compilation.

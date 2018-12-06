@@ -1633,7 +1633,9 @@ public:
 
     LogValue = InvertWithLog(psiM, lah, phase);
     elementWiseCopy(psiMinv, psiM);
+    std::cout << "Survived Constructor\n";
   }
+
   void checkMatrixImp()
   {
     MatType psiMRealType("psiM_RealType", psiM.extent(0), psiM.extent(0));

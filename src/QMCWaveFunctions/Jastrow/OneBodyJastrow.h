@@ -280,9 +280,10 @@ struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
   }
 };
 
+} // namespace qmcplusplus
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/Jastrow/OneBodyJastrowKokkos.h"
 #endif
 
-} // namespace qmcplusplus
+
 #endif

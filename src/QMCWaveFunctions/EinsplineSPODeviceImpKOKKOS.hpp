@@ -90,7 +90,7 @@ public:
   {
     esp.nSplinesSerialThreshold_V = 512;
     esp.nSplinesSerialThreshold_VGH = 128;
-    timer = TimerManager.createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
+    timer = TimerManagerClass::get().createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
   }
   
   //Copy Constructor only supports KOKKOS to KOKKOS
@@ -99,7 +99,7 @@ public:
                         int member_id)
     : EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS, T>, T>(in, team_size, member_id)
   {
-    timer = TimerManager.createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
+    timer = TimerManagerClass::get().createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V   = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH = inesp.nSplinesSerialThreshold_VGH;
@@ -180,7 +180,9 @@ public:
 
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-        myAllocator.createMultiBspline(&einsplines(i), T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+	spline_type* pspline_temp;
+        myAllocator.createMultiBspline(pspline_temp, T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+	einsplines(i) = *pspline_temp;
         if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
@@ -202,11 +204,11 @@ public:
     compute_engine.copy_A44();
     esp.is_copy = true;
     if (esp.nSplines > esp.nSplinesSerialThreshold_V)
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",
+      Kokkos::parallel_for("EinsplineSPO::evaluate_v_parallel",
                            policy_v_parallel_t(esp.nBlocks, 1, 32),
                            *this);
     else
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial", policy_v_serial_t(esp.nBlocks, 1, 32), *this);
+      Kokkos::parallel_for("EinsplineSPO::evaluate_v_serial", policy_v_serial_t(esp.nBlocks, 1, 32), *this);
 
     esp.is_copy = false;
     //   auto u = Lattice.toUnit_floor(p);

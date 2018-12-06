@@ -40,10 +40,9 @@
 
 namespace qmcplusplus
 {
-
 template<typename T>
 class EinsplineSPODeviceImp<Devices::CPU, T>
-  : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
+    : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
 {
   using QMCT = QMCTraits;
   /// define the einsplie data object type
@@ -70,54 +69,54 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
 public:
   EinsplineSPODeviceImp()
   {
-    std::cout<< "EinsplineSPODeviceImpCPU() called" << '\n';
-    esp.nBlocks = 0;
-    esp.nSplines = 0;
+    std::cout << "EinsplineSPODeviceImpCPU() called" << '\n';
+    esp.nBlocks    = 0;
+    esp.nSplines   = 0;
     esp.firstBlock = 0;
-    esp.lastBlock = 0;
-    esp.Owner = false;
-    einsplines = {};
-    psi = {};
-    grad = {};
-    hess = {};
+    esp.lastBlock  = 0;
+    esp.Owner      = false;
+    einsplines     = {};
+    psi            = {};
+    grad           = {};
+    hess           = {};
   }
 
   void construct()
   {
-    std::cout<< "EinsplineSPODeviceImpCPU::construct() called" << '\n';
-    esp.nBlocks = 0;
-    esp.nSplines = 0;
+    std::cout << "EinsplineSPODeviceImpCPU::construct() called" << '\n';
+    esp.nBlocks    = 0;
+    esp.nSplines   = 0;
     esp.firstBlock = 0;
-    esp.lastBlock = 0;
-    esp.Owner = false;
-    einsplines = {};
+    esp.lastBlock  = 0;
+    esp.Owner      = false;
+    einsplines     = {};
     //psi = {};
     //grad = {};
     //hess = {};
   }
-  
+
   //Copy Constructor only supports CPU to CPU
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>,T>& in,
+  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
                         int team_size,
                         int member_id)
   {
-    std::cout<< "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
+    std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
-    esp.nSplinesSerialThreshold_V   = inesp.nSplinesSerialThreshold_V;
-    esp.nSplinesSerialThreshold_VGH = inesp.nSplinesSerialThreshold_VGH;
-    esp.nSplines                    = inesp.nSplines;
-    esp.nSplinesPerBlock            = inesp.nSplinesPerBlock;
-    esp.nBlocks                     = (inesp.nBlocks + team_size - 1) / team_size;
-    esp.firstBlock                  = esp.nBlocks * member_id;
-    esp.lastBlock                   = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
-    esp.nBlocks                     = esp.lastBlock - esp.firstBlock;
+    esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
+    esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
+    esp.nSplines                       = inesp.nSplines;
+    esp.nSplinesPerBlock               = inesp.nSplinesPerBlock;
+    esp.nBlocks                        = (inesp.nBlocks + team_size - 1) / team_size;
+    esp.firstBlock                     = esp.nBlocks * member_id;
+    esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
+    esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
     resize();
   }
 
-    /// destructors
+  /// destructors
   ~EinsplineSPODeviceImp()
   {
     if (esp.Owner)
@@ -128,18 +127,18 @@ public:
   /// resize the containers
   void resize()
   {
-    if(esp.nBlocks > 0)
-      {
-    this->psi.resize(this->esp.nBlocks);
-    this->grad.resize(esp.nBlocks);
-    this->hess.resize(esp.nBlocks);
-    for (int i = 0; i < esp.nBlocks; ++i)
+    if (esp.nBlocks > 0)
     {
-      this->psi[i].resize(esp.nSplinesPerBlock);
-      this->grad[i].resize(esp.nSplinesPerBlock);
-      this->hess[i].resize(esp.nSplinesPerBlock);
-    }
+      this->psi.resize(this->esp.nBlocks);
+      this->grad.resize(esp.nBlocks);
+      this->hess.resize(esp.nBlocks);
+      for (int i = 0; i < esp.nBlocks; ++i)
+      {
+        this->psi[i].resize(esp.nSplinesPerBlock);
+        this->grad[i].resize(esp.nSplinesPerBlock);
+        this->hess[i].resize(esp.nSplinesPerBlock);
       }
+    }
   }
 
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
@@ -160,7 +159,8 @@ public:
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-        this->myAllocator.createMultiBspline(einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+        this->myAllocator
+            .createMultiBspline(einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
@@ -175,57 +175,57 @@ public:
     resize();
   }
 
-  const EinsplineSPOParams<T>& getParams() const
-  {
-    return this->esp;
-  }
+  const EinsplineSPOParams<T>& getParams() const { return this->esp; }
 
-  void* getEinspline(int i) const
-  {
-    return einsplines[i];
-  }
+  void* getEinspline(int i) const { return einsplines[i]; }
 
-  void setLattice(const Tensor<T, 3>& lattice)
-  {
-    esp.lattice.set(lattice);
-  }
+  void setLattice(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
 
   inline void evaluate_v(const QMCT::PosType& p)
   {
-    //impl().evaluate_v(p);
+    auto u = esp.lattice.toUnit_floor(p);
+    for (int i = 0; i < esp.nBlocks; ++i)
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh(const QMCT::PosType& p)
   {
-    //impl().evaluate_vgh(p);
+    auto u = esp.lattice.toUnit_floor(p);
+    for (int i = 0; i < esp.nBlocks; ++i)
+      compute_engine.evaluate_vgh(einsplines[i],
+                                  u[0],
+                                  u[1],
+                                  u[2],
+                                  psi[i].data(),
+                                  grad[i].data(),
+                                  hess[i].data(),
+                                  esp.nSplinesPerBlock);
   }
 
   void evaluate_vgl(const QMCT::PosType& p)
   {
-    //impl().evaluate_vgl(p);
+    auto u = esp.lattice.toUnit_floor(p);
+    for (int i = 0; i < esp.nBlocks; ++i)
+      compute_engine.evaluate_vgl(einsplines[i],
+                                  u[0],
+                                  u[1],
+                                  u[2],
+                                  psi[i].data(),
+                                  grad[i].data(),
+                                  hess[i].data(),
+                                  esp.nSplinesPerBlock);
   }
 
-  T getPsi(int ib, int n)
-  {
-    return psi[ib][n];
-  }
+  T getPsi(int ib, int n) { return psi[ib][n]; }
 
-  T getGrad(int ib, int n, int m)
-  {
-    return grad[ib].data(n)[m];
-  }
+  T getGrad(int ib, int n, int m) { return grad[ib].data(n)[m]; }
 
-  T getHess(int ib, int n, int m)
-  {
-    return hess[ib].data(n)[m];
-  }
-
-
+  T getHess(int ib, int n, int m) { return hess[ib].data(n)[m]; }
 };
 
 extern template class EinsplineSPODeviceImp<Devices::CPU, float>;
 extern template class EinsplineSPODeviceImp<Devices::CPU, double>;
 
-} // namespace qmcpluplus
+} // namespace qmcplusplus
 
 #endif
