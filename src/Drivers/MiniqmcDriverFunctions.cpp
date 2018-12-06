@@ -159,7 +159,7 @@ void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
 
 
 template<Devices DT>
-void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet* spo_set,
+void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
                                              MiniqmcOptions& mq_opt,
                                              const int norb,
                                              const int nTiles,

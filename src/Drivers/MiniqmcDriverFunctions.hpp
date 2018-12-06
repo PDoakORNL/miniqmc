@@ -43,7 +43,7 @@ class MiniqmcDriverFunctions
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
-  static void buildSPOSet(SPOSet* spo_set,
+  static void buildSPOSet(SPOSet*& spo_set,
 			  MiniqmcOptions& mq_opt,
 			  const int norb,
 			  const int nTiles,

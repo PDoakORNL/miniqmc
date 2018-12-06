@@ -47,6 +47,9 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
+  TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
+    {{Timer_Det, "Determinant", timer_level_fine}, {Timer_GL, "Kinetic Energy", timer_level_coarse}};
+
   setup_timers(timers, WaveFunctionTimerNames);
   for (int i = 0; i < Jastrows.size(); i++)
   {

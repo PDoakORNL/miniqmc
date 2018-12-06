@@ -45,7 +45,7 @@ public:
     struct IntList
     {};
 
-    void build_cases(SPOSet* spo_set,
+    void build_cases(SPOSet*& spo_set,
 		     MiniqmcOptions& mq_opt,
 		     const int norb,
 		     const int nTiles,
@@ -54,7 +54,7 @@ public:
 		     IntList<>) { /* "default case" */ }
 
     template<typename ...N>
-    void build_cases(SPOSet* spo_set,
+    void build_cases(SPOSet*& spo_set,
 		     MiniqmcOptions& mq_opt,
 		     const int norb,
 		     const int nTiles,
@@ -65,7 +65,7 @@ public:
     }
 
     template<typename I, typename ...N>
-    void build_cases(SPOSet* spo_set,
+    void build_cases(SPOSet*& spo_set,
 		     MiniqmcOptions& mq_opt,
 		     const int norb,
 		     const int nTiles,
@@ -136,7 +136,7 @@ public:
 
     MiniqmcDriver& my_;
     CaseHandler(MiniqmcDriver& my) : my_(my) {}
-    void build(SPOSet* spo_set,
+    void build(SPOSet*& spo_set,
 	       MiniqmcOptions& mq_opt,
 	       const int norb,
 	       const int nTiles,
