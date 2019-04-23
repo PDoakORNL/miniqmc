@@ -30,16 +30,14 @@ namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
-//BOOST_HANA_CONSTEXPR_LAMBDA auto cpu_str = BOOST_HANA_STRING("CPU");
-//BOOST_HANA_CONSTEXPR_LAMBDA auto cuda_str = BOOST_HANA_STRING("CUDA");
-//BOOST_HANA_CONSTEXPR_LAMBDA auto last_str = BOOST_HANA_STRING("LAST");
 // Allows expression of Devices enum as strings at compile time.
     constexpr auto device_names = hana::make_tuple(hana::string_c<'C','P','U'>,
+						   hana::string_c<'R','E','F','E','R','E','N','C','E'>,
 #ifdef QMC_USE_KOKKOS
 						   hana::string_c<'K','O','K','K','O'.'S'>,
 #endif
 #ifdef QMC_USE_OMPOL
-						   "OMPOL",
+						   hana::string_c<'O', 'M', 'P', 'O', 'L'>,
 #endif
 #ifdef QMC_USE_CUDA
 						   hana::string_c<'C','U','D','A'>,

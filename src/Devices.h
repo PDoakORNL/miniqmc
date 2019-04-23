@@ -25,6 +25,7 @@ namespace qmcplusplus
 enum class Devices
 {
   CPU,
+  REFERENCE,
 #ifdef QMC_USE_KOKKOS
   KOKKOS,
 #endif

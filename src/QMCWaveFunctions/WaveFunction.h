@@ -115,7 +115,7 @@ public:
   void setupTimers();
 
   // friends
-  friend void build_WaveFunction(bool useRef,
+  friend void build_WaveFunction(
                                  WaveFunction& WF,
                                  ParticleSet& ions,
                                  ParticleSet& els,

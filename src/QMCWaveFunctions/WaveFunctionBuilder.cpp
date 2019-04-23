@@ -36,7 +36,7 @@ void WaveFunctionBuilder<DT>::devDetBuild(WaveFunction& WF,
 }
 
 template<Devices DT>
-void WaveFunctionBuilder<DT>::build(bool useRef,
+void WaveFunctionBuilder<DT>::build(
                                     WaveFunction& WF,
                                     ParticleSet& ions,
                                     ParticleSet& els,
@@ -55,8 +55,52 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
 
   const int nelup = els.getTotalNum() / 2;
 
-  if (useRef)
-  {
+    using J1OrbType = OneBodyJastrow<DT, BsplineFunctor<DT, valT>>;
+    using J2OrbType = TwoBodyJastrow<DT, BsplineFunctor<DT, valT>>;
+    using J3OrbType = ThreeBodyJastrow<DT, PolynomialFunctor3D>;
+    ions.RSoA       = ions.R;
+    els.RSoA        = els.R;
+
+    // distance tables
+    els.addTable(els, DT_SOA);
+    WF.ei_TableID = els.addTable(ions, DT_SOA);
+
+    // determinant component
+    WF.nelup = nelup;
+    devDetBuild(WF, RNG, els, dev_bufs);
+
+    // J1 component
+    J1OrbType* J1 = new J1OrbType(ions, els);
+    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
+    WF.Jastrows.push_back(J1);
+
+    // J2 component
+    J2OrbType* J2 = new J2OrbType(els);
+    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
+    WF.Jastrows.push_back(J2);
+
+    // J3 component
+    if (enableJ3)
+    {
+      J3OrbType* J3 = new J3OrbType(ions, els);
+      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+      WF.Jastrows.push_back(J3);
+    }
+  
+
+  WF.setupTimers();
+  WF.Is_built = true;
+}
+
+template<>
+void WaveFunctionBuilder<Devices::REFERENCE>::build(
+                                    WaveFunction& WF,
+                                    ParticleSet& ions,
+                                    ParticleSet& els,
+                                    const RandomGenerator<QMCTraits::RealType>& RNG,
+                                    DeviceBuffers<Devices::REFERENCE>& dev_bufs,
+                                    bool enableJ3)
+{
     using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<valT>>;
     using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<valT>>;
     using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
@@ -91,49 +135,12 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
       buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
       WF.Jastrows.push_back(J3);
     }
-  }
-  else
-  {
-    using J1OrbType = OneBodyJastrow<DT, BsplineFunctor<DT, valT>>;
-    using J2OrbType = TwoBodyJastrow<DT, BsplineFunctor<DT, valT>>;
-    using J3OrbType = ThreeBodyJastrow<DT, PolynomialFunctor3D>;
-    ions.RSoA       = ions.R;
-    els.RSoA        = els.R;
-
-    // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
-
-    // determinant component
-    WF.nelup = nelup;
-    devDetBuild(WF, RNG, els, dev_bufs);
-
-    // J1 component
-    J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J1);
-
-    // J2 component
-    J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J2);
-
-    // J3 component
-    if (enableJ3)
-    {
-      J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
-      WF.Jastrows.push_back(J3);
-    }
-  }
-
-  WF.setupTimers();
-  WF.Is_built = true;
 }
 
+    
 template class WaveFunctionBuilder<Devices::CPU>;
-// template void WaveFunctionBuilder<Devices::CPU>::devDetBuild(WaveFunction& WF, const RandomGenerator<QMCTraits::RealType>& RNG,
-// 								 ParticleSet& els,DeviceBuffers<Devices::CPU>& dev_bufs);
+template class WaveFunctionBuilder<Devices::REFERENCE>;
+
 #ifdef QMC_USE_KOKKOS
 template class WaveFunctionBuilder<Devices::KOKKOS>;
 #endif

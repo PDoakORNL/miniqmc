@@ -150,42 +150,6 @@ public:
 private:
 };
 
-// template<Devices DT, typename T>
-// KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
-//     operator()(const EvaluateVTag&, const team_v_serial_t& team) const
-// {
-// }
-
-// template<Devices DT, typename T>
-// KOKKOS_INLINE_FUNCTION void EinsplineSPO<DT, T>::
-//     operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-// {
-// }
-
-// template<typename T>
-// KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
-// operator()(const typename EvaluateVTag&,
-// 	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_serial_t& team) const
-// {
-//   int block               = team.league_rank();
-//   auto u                  = Lattice.toUnit_floor(tmp_pos);
-//   einsplines(block).coefs = einsplines(block).coefs_view.data();
-//   compute_engine
-//       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
-// }
-
-// template<typename T>
-// KOKKOS_INLINE_FUNCTION void EinsplineSPO<Devices::KOKKOS, T>::
-// operator()(const typename EinsplineSPO<Devices::KOKKOS, T>::eEvaluateVTag&,
-// 	   const typename EinsplineSPO<Devices::KOKKOS, T>::team_v_parallel_t& team) const
-// {
-//   int block               = team.league_rank();
-//   auto u                  = Lattice.toUnit_floor(tmp_pos);
-//   einsplines(block).coefs = einsplines(block).coefs_view.data();
-//   compute_engine
-//       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
-// }
-
 } // namespace qmcplusplus
 
 #endif

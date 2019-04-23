@@ -14,8 +14,7 @@ template<Devices DT>
 class WaveFunctionBuilder
 {
 public:
-  static void build(bool useRef,
-                    WaveFunction& WF,
+  static void build(                    WaveFunction& WF,
                     ParticleSet& ions,
                     ParticleSet& els,
                     const RandomGenerator<QMCTraits::RealType>& RNG,
@@ -30,6 +29,7 @@ private:
 };
 
 extern template class WaveFunctionBuilder<Devices::CPU>;
+extern template class WaveFunctionBuilder<Devices::REFERENCE>;
 
 #ifdef QMC_USE_KOKKOS
 extern template class WaveFunctionBuilder<Devices::KOKKOS>;

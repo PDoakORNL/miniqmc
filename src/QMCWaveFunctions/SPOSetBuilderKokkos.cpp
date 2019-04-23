@@ -14,20 +14,11 @@
 namespace qmcplusplus
 {
 template<>
-SPOSet* SPOSetBuilder<Devices::KOKKOS>::buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
+SPOSet* SPOSetBuilder<Devices::KOKKOS>::buildView(const SPOSet* SPOSet_main, int team_size, int member_id)
 {
-  if (useRef)
-  {
-    auto* temp_ptr = dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_view);
-  }
-  else
-  {
     auto* temp_ptr = dynamic_cast<const EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>*>(SPOSet_main);
     auto* spo_view = new EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
     return dynamic_cast<SPOSet*>(spo_view);
-  }
 }
 
 

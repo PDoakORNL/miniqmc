@@ -37,6 +37,7 @@ namespace hana = boost::hana;
 /** This creates a compile time tuple of the different devices types, indexed by the device range
  */
 constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
+					       hana::type_c<MiniqmcDriverFunctions<Devices::Reference>>,
 #ifdef QMC_USE_KOKKOS
                                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
 #endif

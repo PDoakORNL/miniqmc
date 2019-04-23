@@ -9,18 +9,24 @@
 // File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //////////////////////////////////////////////////////////////////////////////////////
 
+/** @file
+ *  This specializes the SPOSetBuilder for the reference implementation,
+ *  all the others share a common architecture but this attempts to presever the "reference" code
+ *  as close as possible to its original state
+ */
 
-#ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
-#define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
+#ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_REF_H
+#define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_REF_H
 
 #include "QMCWaveFunctions/SPOSetImp.h"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
+#include "QMCWaveFunctions/einspline_spo_ref.hpp"
 
 namespace qmcplusplus
 {
-/// build the einspline SPOSet.
-template<Devices DT>
-class SPOSetBuilder
+
+template<>
+class SPOSetBuilder<Devices::REFERENCE>
 {
 public:
   static SPOSet* build(                       int nx,
@@ -32,26 +38,23 @@ public:
                        const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                        bool init_random = true)
   {
-      EinsplineSPO<DT, OHMMS_PRECISION>* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
-      spo_main->set(nx, ny, nz, num_splines, nblocks, tile_size);
-      spo_main->setLattice(lattice_b);
+      miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>* spo_main =
+      new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
+      spo_main->set(nx, ny, nz, num_splines, nblocks);
+      spo_main->Lattice.set(lattice_b);
       return dynamic_cast<SPOSet*>(spo_main);
   }
 
   /// build the einspline SPOSet as a view of the main one.
   static SPOSet* buildView(const SPOSet* SPOSet_main, int team_size, int member_id)
   {
-      auto* temp_ptr = dynamic_cast<const EinsplineSPO<DT, OHMMS_PRECISION>*>(SPOSet_main);
-      auto* spo_view = new EinsplineSPO<DT, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+      auto* temp_ptr = dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
+      auto* spo_view = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
       return dynamic_cast<SPOSet*>(spo_view);
   }
 
   static SPOSet* buildView(const SPOSet& SPOSet_main, int team_size, int member_id)
   {
-    return SPOSetBuilder::buildView(useRef, &SPOSet_main, team_size, member_id);
+    return SPOSetBuilder::buildView(&SPOSet_main, team_size, member_id);
   }
 };
-
-
-} // namespace qmcplusplus
-#endif

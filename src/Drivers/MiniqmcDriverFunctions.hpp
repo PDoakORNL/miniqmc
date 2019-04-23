@@ -155,6 +155,7 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
   app_summary() << "thread:" << ip << " starting up, with team_size: " << team_size << " member_id: " << member_id
                 << ".\n";
   int my_accepts = 0;
+
   Crowd<DT> crowd(ip, myPrimes, ions, mq_opt.pack_size);
 
   crowd.init();
