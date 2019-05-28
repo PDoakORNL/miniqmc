@@ -80,7 +80,7 @@ set(CTEST_SITE "CADES_CONDO-${PYCICLE_BUILD_STAMP}")
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_TEST_TIMEOUT "600")
 
-set(CTEST_PROJECT_NAME "PDoak miniqmc")
+set(CTEST_PROJECT_NAME "PDoak+miniqmc")
 set(CTEST_DROP_METHOD "https")
 set(CTEST_DROP_SITE "cdash-minimal.ornl.gov")
 set(CTEST_DROP_LOCATION "/cdash/submit.php?project=PDoak+miniqmc")
