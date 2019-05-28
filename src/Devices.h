@@ -38,7 +38,6 @@ enum class Devices
 };
 
 
-
 } // namespace qmcplusplus
 
 #endif
