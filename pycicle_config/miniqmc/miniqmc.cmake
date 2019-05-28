@@ -10,8 +10,8 @@ set(PYCICLE_GITHUB_USER_NAME     "PDoakORNL")
 set(PYCICLE_GITHUB_BASE_BRANCH   "one_code")
 
 # CDash server settings
-set(PYCICLE_CDASH_PROJECT_NAME   "miniqmc")
+set(PYCICLE_CDASH_PROJECT_NAME   "PDoak miniqmc")
 set(PYCICLE_CDASH_SERVER_NAME    "cdash-minimal.ornl.gov")
-
+set(PYCICLE_CDASH_HTTP_PATH      "cdash")
 # project specific target to build before running tests
 set(PYCICLE_CTEST_BUILD_TARGET   "all")
