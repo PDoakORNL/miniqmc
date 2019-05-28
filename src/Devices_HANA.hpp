@@ -16,7 +16,7 @@
 
 #include <boost/hana.hpp>
 // /map.hpp>
-// #include <boost/hana/range.hpp>
+//#include <boost/hana/range.hpp>
 // #include <boost/hana/tuple.hpp>
 // #include <boost/hana/size.hpp>
 // #include <boost/hana/fwd/drop_while.hpp>
@@ -39,7 +39,7 @@ namespace hana = boost::hana;
 						   hana::string_c<'K','O','K','K','O'.'S'>,
 #endif
 #ifdef QMC_USE_OMPOL
-						   "OMPOL",
+						   hana::string_c<'O','M','P','O','L'>,
 #endif
 #ifdef QMC_USE_CUDA
 						   hana::string_c<'C','U','D','A'>,
