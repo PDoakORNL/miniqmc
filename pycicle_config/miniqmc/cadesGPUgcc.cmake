@@ -93,6 +93,7 @@ string(CONCAT CTEST_BUILD_OPTIONS ${CTEST_BUILD_OPTIONS}
     "\"-DCMAKE_C_COMPILER=mpicc\" "
     "\"-DCMAKE_C_FLAGS=${CFLAGS}\" "
     "\"-DCMAKE_CXX_FLAGS=${CXXFLAGS}\" "
+    "\"-DCMAKE_EXE_LINKER_FLAGS=-L/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-8.2.0/gcc-6.5.0-egooyqwfmyg6msi5xykwsvniotp774yx/lib64 -Wl,-rpath,/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-8.2.0/gcc-6.5.0-egooyqwfmyg6msi5xykwsvniotp774yx/lib64\ -L{CUDA_DIR}/lib64 -Wl,-rpath,${CUDA_DIR}/lib64" "
     "\"-DCMAKE_BUILD_TYPE=Release\" "
     "\"-DQMC_USE_CUDA=1\" "
     "\"-DCUDA_TOOLKIT_ROOT_DIR=${CUDA_DIR}\" "
