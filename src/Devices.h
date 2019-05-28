@@ -37,7 +37,6 @@ enum class Devices
   LAST // this is the end
 };
 
-
 } // namespace qmcplusplus
 
 #endif
