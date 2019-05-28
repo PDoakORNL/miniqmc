@@ -42,7 +42,6 @@ if (PYCICLE_COMPILER_TYPE MATCHES "gcc")
   set(HDF5_DIR         "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-6.5.0/hdf5-1.10.4-4gmsnjn7fozngnc3gwckwnoi2dq53yon")
   #set by module load cuda/9.2
   set(MAGMA_DIR        "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-6.5.0/magma-2.4.0-ndhxaftye4ji5bckhwjv23f5rhvrebai")
-  set(CUDA_DIR         "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/cuda/9.2/centos7.2_binary") 
   # multiline string
   set(PYCICLE_COMPILER_SETUP "
     #
