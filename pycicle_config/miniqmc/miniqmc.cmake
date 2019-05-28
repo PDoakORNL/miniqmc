@@ -7,7 +7,7 @@
 set(PYCICLE_GITHUB_PROJECT_NAME  "miniqmc")
 set(PYCICLE_GITHUB_USER_NAME     "PDoakORNL")
 
-set(PYCICLE_GITHUB_BASE_BRANCH   "develop")
+set(PYCICLE_GITHUB_BASE_BRANCH   "one_code")
 
 # CDash server settings
 set(PYCICLE_CDASH_PROJECT_NAME   "miniqmc")
