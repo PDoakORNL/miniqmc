@@ -27,7 +27,7 @@ struct CheckMultiBsplineEvalOutput
     REQUIRE(matching_vals);
 
     bool matching_grads = true;
-    for (int i = 0; i < gpu_grads.size(); ++i)
+    for (int i = 0; i < grads.size(); ++i)
     {
       if (matching_grads)
         for (int j = 0; j < 3; ++j)
